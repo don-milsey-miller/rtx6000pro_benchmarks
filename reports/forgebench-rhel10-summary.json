@@ -1,0 +1,204 @@
+{
+  "title": "ForgeBench RHEL 10 AI Agent Stack Optimization",
+  "subtitle": "A paid, artifact-backed study of task completion and serving efficiency for vLLM, three coding models, and Pi Coding Agent on 3× RTX PRO 6000 Blackwell.",
+  "generatedAt": "2026-10-23T05:12:00Z",
+  "commit": "c76ecd8",
+  "suiteId": "forgebench-greenfield-v1",
+  "decision": "Adopt the redesigned Linux-only ForgeBench harness and the retained stack configuration as the new baseline. Qwen is the strongest completion choice; Muse is the efficient secondary choice; Gemma should not be promoted for long-running work until its generated-service lifecycle behavior is corrected and reproduced.",
+  "summary": {
+    "optimizedCompletion": 0.7530864197530865,
+    "baselineCompletion": 0.18584656084656084,
+    "fullPasses": 7,
+    "selectedAttempts": 9
+  },
+  "cost": {
+    "totalUsd": 31.4119,
+    "budgetUsd": 100,
+    "podHours": 3.6292
+  },
+  "executiveFindings": [
+    {
+      "title": "Completion improved materially",
+      "metric": "18.6% → 75.3%",
+      "body": "Weighted completion rose by 56.7 percentage points after replacing Kiln with independently graded greenfield products, fixing harness defects, and tuning model/agent behavior.",
+      "details": [
+        "Small, medium, and large tasks carry weights 1, 3, and 8.",
+        "The comparable baseline is evaluator-normalized; the originally recorded baseline was 18.0%.",
+        "Seven of nine selected model/task cells fully passed."
+      ]
+    },
+    {
+      "title": "Qwen completed the whole ladder",
+      "metric": "12/12 · 14/14 · 18/18",
+      "body": "Qwen completed all three products. Its large QueuePilot run survived five real Pi compactions and passed every external acceptance check, but required 200 turns and 7.54 million Pi-accounted tokens.",
+      "details": [
+        "Large wall time: 24.2 minutes.",
+        "Mean TPOT: 13.4 ms; no vLLM waiting requests or preemptions.",
+        "A second earlier configuration also reached 18/18, while one repeat was stopped after 35 minutes."
+      ]
+    },
+    {
+      "title": "Serving capacity was not the limiter",
+      "metric": "0 queued · 0 preempted",
+      "body": "Selected runs showed low KV-cache pressure, strong prefix-cache reuse, and no scheduler queuing. Failures came from agent decisions, ambiguous contracts discovered in the harness, generated application behavior, and excessive tool/model work—not GPU scarcity.",
+      "details": [
+        "Selected large-run KV peaks were 0.6% to 7.9%.",
+        "Prefix-cache hit rates were 88.8% to 92.4% on selected large runs.",
+        "The dominant optimization target is useful work per turn, not larger KV allocation."
+      ]
+    },
+    {
+      "title": "Muse is efficient but variable",
+      "metric": "92.6% weighted",
+      "body": "The retained Muse prompt passed LinkLedger and HookBin and reached 16/18 on QueuePilot. A prior candidate reached 17/18, while repeats ranged from 14 to 17, showing meaningful behavioral variance.",
+      "details": [
+        "Selected large run: 8.0 minutes and 299,857 Pi-accounted tokens.",
+        "Remaining final failures were an incorrect missing If-Match status and a dashboard placeholder containing the tenant token.",
+        "Literal HTTP-contract guidance fixed the earlier replay and oversized-body failures."
+      ]
+    },
+    {
+      "title": "Gemma needs a lifecycle fix",
+      "metric": "2 full passes · 1 deadlock",
+      "body": "Gemma passed the small and medium products after evaluator normalization. Its final QueuePilot implementation reported nine internal tests passing, but the independent evaluator hung twice, including a separate five-minute diagnostic run.",
+      "details": [
+        "The agent itself exited normally after 17.0 minutes.",
+        "The result is conservatively scored 0/18 because independent completion could not be established.",
+        "This is a generated-product reliability failure even though the harness classified the missing evaluator result as infrastructure_error."
+      ]
+    },
+    {
+      "title": "Cold-start storage matters",
+      "metric": "~35 min to all services ready",
+      "body": "The RHEL image and services worked, but model staging and compilation over the mounted workspace were slow. Bare metal should place model snapshots, compilation caches, and hot benchmark workspaces on local NVMe.",
+      "details": [
+        "Bootstrap required a retry and finished about ten minutes after pod creation.",
+        "Model prefetch/loading took roughly four to seven minutes per service.",
+        "Compilation and CUDA graph capture added roughly five to six minutes per model."
+      ]
+    }
+  ],
+  "modelCompletion": [
+    { "id": "qwen", "label": "Qwen3.8-27B", "baseline": 0.006944444444444444, "optimized": 1.0 },
+    { "id": "muse", "label": "Muse-Glimmer-30B", "baseline": 0.2698412698412698, "optimized": 0.9259259259259259 },
+    { "id": "gemma", "label": "Gemma-4-31B-it", "baseline": 0.28075396825396826, "optimized": 0.3333333333333333 }
+  ],
+  "efficiencyRuns": [
+    { "model": "qwen", "label": "Qwen / LinkLedger", "shortLabel": "Q/S", "tokens": 159860, "completion": 1.0, "wallSeconds": 158.028 },
+    { "model": "qwen", "label": "Qwen / HookBin", "shortLabel": "Q/M", "tokens": 1205005, "completion": 1.0, "wallSeconds": 341.398 },
+    { "model": "qwen", "label": "Qwen / QueuePilot", "shortLabel": "Q/L", "tokens": 7535343, "completion": 1.0, "wallSeconds": 1449.078 },
+    { "model": "muse", "label": "Muse / LinkLedger", "shortLabel": "M/S", "tokens": 164900, "completion": 1.0, "wallSeconds": 374.386 },
+    { "model": "muse", "label": "Muse / HookBin", "shortLabel": "M/M", "tokens": 291084, "completion": 1.0, "wallSeconds": 456.107 },
+    { "model": "muse", "label": "Muse / QueuePilot", "shortLabel": "M/L", "tokens": 299857, "completion": 0.8888888888888888, "wallSeconds": 479.476 },
+    { "model": "gemma", "label": "Gemma / LinkLedger", "shortLabel": "G/S", "tokens": 202716, "completion": 1.0, "wallSeconds": 565.667 },
+    { "model": "gemma", "label": "Gemma / HookBin", "shortLabel": "G/M", "tokens": 1366073, "completion": 1.0, "wallSeconds": 1247.526 },
+    { "model": "gemma", "label": "Gemma / QueuePilot", "shortLabel": "G/L", "tokens": 436332, "completion": 0.0, "wallSeconds": 1020.421 }
+  ],
+  "outcomes": [
+    { "model": "qwen", "task": "Small", "product": "LinkLedger", "baselinePassed": 1, "total": 12, "baselineClass": "failed", "optimizedPassed": 12, "wallSeconds": 158.028, "tokens": 159860, "turns": 15, "prefixHit": 0.6624860590761258, "kvPeak": 0.0377668308702791, "verdict": "pass" },
+    { "model": "qwen", "task": "Medium", "product": "HookBin", "baselinePassed": 0, "total": 14, "baselineClass": "failed", "optimizedPassed": 14, "wallSeconds": 341.398, "tokens": 1205005, "turns": 53, "prefixHit": 0.8650065973647709, "kvPeak": 0.0673234811165846, "verdict": "pass" },
+    { "model": "qwen", "task": "Large", "product": "QueuePilot", "baselinePassed": 0, "total": 18, "baselineClass": "failed", "optimizedPassed": 18, "repeatRange": "16–18/18; one 35m abort", "wallSeconds": 1449.078, "tokens": 7535343, "turns": 200, "prefixHit": 0.8875683592055076, "kvPeak": 0.0788177339901478, "verdict": "pass" },
+    { "model": "muse", "task": "Small", "product": "LinkLedger", "baselinePassed": 8, "total": 12, "baselineClass": "failed", "optimizedPassed": 12, "wallSeconds": 374.386, "tokens": 164900, "turns": 18, "prefixHit": 0.9142123507510592, "kvPeak": 0.004120109533851668, "verdict": "pass" },
+    { "model": "muse", "task": "Medium", "product": "HookBin", "baselinePassed": 12, "total": 14, "baselineClass": "failed", "optimizedPassed": 14, "wallSeconds": 456.107, "tokens": 291084, "turns": 22, "prefixHit": 0.9340554134575539, "kvPeak": 0.0049888262881243595, "verdict": "pass" },
+    { "model": "muse", "task": "Large", "product": "QueuePilot", "baselinePassed": 0, "total": 18, "baselineClass": "failed", "optimizedPassed": 16, "repeatRange": "14–17/18", "wallSeconds": 479.476, "tokens": 299857, "turns": 22, "prefixHit": 0.9242037663802829, "kvPeak": 0.005652953951716944, "verdict": "near-pass" },
+    { "model": "gemma", "task": "Small", "product": "LinkLedger", "baselinePassed": 7, "total": 12, "baselineClass": "failed", "optimizedPassed": 12, "wallSeconds": 565.667, "tokens": 202716, "turns": 15, "prefixHit": 0.8808103557257666, "kvPeak": 0.04956635269980414, "verdict": "pass" },
+    { "model": "gemma", "task": "Medium", "product": "HookBin", "baselinePassed": 13, "total": 14, "baselineClass": "timeout / normalized", "optimizedPassed": 14, "wallSeconds": 1247.526, "tokens": 1366073, "turns": 51, "prefixHit": 0.9665476969074092, "kvPeak": 0.08057446610090457, "verdict": "pass" },
+    { "model": "gemma", "task": "Large", "product": "QueuePilot", "baselinePassed": 0, "total": 18, "baselineClass": "not run after timeout", "optimizedPassed": 0, "repeatRange": "evaluator deadlocked twice", "wallSeconds": 1020.421, "tokens": 436332, "turns": 24, "prefixHit": 0.9218378303272189, "kvPeak": 0.06364823277067988, "verdict": "fail" }
+  ],
+  "qualification": "These results characterize this exact stack and task suite, not model intelligence in general. Most optimized cells are single selected attempts, Muse large showed repeat variance, and evaluator/spec defects were corrected during the campaign. Baseline and optimized scores use the corrected UI criterion; the original unnormalized baseline was 18.0%. Gemma large is assigned zero because an independently verifiable result is required.",
+  "failureModes": [
+    {
+      "title": "Reasoning without delivery",
+      "body": "Baseline Qwen exhausted its response budget discussing the problem and often produced no usable implementation. Disabling thinking and requiring an implementation-first workflow converted this into full passes.",
+      "details": ["Baseline Qwen scored 1/12, 0/14, and 0/18.", "The final large run still needed five compactions, so controller efficiency remains a target."]
+    },
+    {
+      "title": "Almost-correct HTTP behavior",
+      "body": "Muse repeatedly built useful products but substituted semantically plausible behavior for exact contracts: socket destruction instead of a 413 JSON response, replay metadata with the wrong field shape, and 400 instead of 409.",
+      "details": ["The retained suffix tells Muse to honor status and field contracts literally.", "Draining oversized request bodies before responding fixed health-after-rejection behavior."]
+    },
+    {
+      "title": "Generated process lifecycle deadlock",
+      "body": "Gemma QueuePilot passed its own tests but the external evaluator never emitted a result. A separate diagnostic evaluator remained stuck for five minutes, making the generated service unsafe to count as completed.",
+      "details": ["Likely areas are lingering handles, shutdown behavior, SSE connections, or an unbounded request path.", "Future evaluation should capture active handles and per-check deadlines."]
+    },
+    {
+      "title": "Evaluator over-specification",
+      "body": "The HookBin evaluator required a literal form tag even though the public contract required a usable interface. Qwen and Gemma had working input/button UIs and were wrongly failed. The evaluator now tests observable usability instead.",
+      "details": ["Reference fixtures and empty implementations still validate 14/14 and expected failure.", "Both baseline and optimized reporting are normalized to the corrected criterion."]
+    },
+    {
+      "title": "Hidden response-shape assumptions",
+      "body": "Some QueuePilot and HookBin checks expected exact event names or response shapes that were not fully stated. Those contracts were published in the task specifications before the final runs.",
+      "details": ["The benchmark now measures implementation, not guessing an evaluator convention.", "The change improved interpretability but means pre- and post-fix attempts are not pure model-only A/B tests."]
+    },
+    {
+      "title": "Token and turn amplification",
+      "body": "Qwen served tokens much faster than Muse or Gemma, yet its large pass consumed over 25 times Muse's selected tokens. Faster decoding alone did not guarantee a faster or cheaper completed task.",
+      "details": ["Qwen large: 7.54M tokens, 200 turns, 24.2 minutes.", "Muse large: 0.30M tokens, 22 turns, 8.0 minutes, 16/18 checks."]
+    }
+  ],
+  "telemetry": [
+    { "model": "qwen", "tpotSeconds": 0.013368055412171594, "ttftP95Seconds": 7.5, "prefixHit": 0.8875683592055076, "kvPeak": 0.0788177339901478, "gpuUtilization": 96.08437067773167, "powerMeanW": 372.9313278008298, "waitingMax": 0, "preemptions": 0 },
+    { "model": "muse", "tpotSeconds": 0.039504625540328124, "ttftP95Seconds": 1.0, "prefixHit": 0.9242037663802829, "kvPeak": 0.005652953951716944, "gpuUtilization": 98.84100418410041, "powerMeanW": 373.78870292887035, "waitingMax": 0, "preemptions": 0 },
+    { "model": "gemma", "tpotSeconds": 0.04636040049994502, "ttftP95Seconds": 7.5, "prefixHit": 0.9218378303272189, "kvPeak": 0.06364823277067988, "gpuUtilization": 99.52380952380952, "powerMeanW": 372.9899285714286, "waitingMax": 0, "preemptions": 0 }
+  ],
+  "experiments": [
+    { "id": "E01", "change": "Replace Kiln with three greenfield Linux products and black-box evaluators.", "result": "The suite exposed delivery, protocol, persistence, UI, concurrency, and lifecycle failures that a patch benchmark did not.", "status": "keep", "why": "It directly measures useful autonomous task completion." },
+    { "id": "E02", "change": "Build and boot a RHEL 10.2 container with three isolated vLLM services.", "result": "All models served successfully on dedicated Blackwell GPUs; cold-start staging was slow.", "status": "keep", "why": "It matches the target operating system and isolates per-model telemetry." },
+    { "id": "E03", "change": "Use BF16 weights, FP8 KV cache, 65,536 context, prefix caching, and Qwen MTP=3.", "result": "No selected request queued or preempted; KV peaks stayed below 8.1%.", "status": "keep", "why": "The configuration was stable and leaves capacity for future concurrent agents." },
+    { "id": "E04", "change": "Disable Qwen thinking and require implementation-first execution.", "result": "Qwen moved from near-zero completion to full passes at every task size.", "status": "keep", "why": "It eliminated the baseline reasoning-without-delivery failure." },
+    { "id": "E05", "change": "Add Pi JSON telemetry parsing, context/compaction accounting, and per-tool metrics.", "result": "Runs now expose turns, tool errors, context peaks, real compactions, and token work.", "status": "keep", "why": "Optimization needs agent-layer evidence in addition to vLLM counters." },
+    { "id": "E06", "change": "Inject a default 120-second bound into shell tools while respecting explicit timeouts.", "result": "Unattended commands cannot hang forever; legitimate longer explicit commands remain possible.", "status": "keep", "why": "It contains stalls without imposing a universal hard ceiling." },
+    { "id": "E07", "change": "Hard-cap every shell command regardless of the agent's explicit limit.", "result": "The candidate did not improve Qwen wall time and regressed acceptance to 15/18.", "status": "discard", "why": "It interrupted valid verification work without reducing model-loop cost." },
+    { "id": "E08", "change": "Tell agents to preserve seeded entrypoints and visible tests.", "result": "This addressed Gemma's destructive rewrite failure, but the next long run still deadlocked during external evaluation.", "status": "mixed", "why": "Retain the guardrail, but add lifecycle diagnostics and evaluator check deadlines." },
+    { "id": "E09", "change": "Add Muse-specific literal HTTP-contract and streamed-body guidance.", "result": "Muse improved from 11/12 and 12/14 to full small and medium passes.", "status": "keep", "why": "It corrected repeatable protocol mistakes without prescribing implementation code." },
+    { "id": "E10", "change": "Correct the HookBin UI evaluator and publish exact replay/project/event schemas.", "result": "False failures and hidden-contract guessing were removed; reference and empty-fixture validation remained sound.", "status": "keep", "why": "Acceptance criteria must test the written observable contract." },
+    { "id": "E11", "change": "Repeat Muse and Qwen large-task candidates.", "result": "Muse varied between 14 and 17 checks; Qwen had two full passes and one >35-minute abort.", "status": "mixed", "why": "The signal is useful, but more seeds are required for confidence intervals." }
+  ],
+  "strategy": [
+    { "title": "Freeze a reproducible v1", "body": "Tag this commit, preserve the paid artifact archive, pin model revisions and package versions, and record image digests. Re-run the selected nine cells on bare metal before changing anything else.", "exit": "All services pass health checks and selected scores reproduce within declared tolerance." },
+    { "title": "Harden the evaluator boundary", "body": "Give every acceptance check its own deadline, capture open sockets/handles when a check stalls, and guarantee cleanup in finally blocks. Classify evaluator failures separately from generated-product deadlocks while still scoring unverifiable products as incomplete.", "exit": "Synthetic leaking and hanging fixtures terminate predictably with diagnostic evidence." },
+    { "title": "Optimize agent work efficiency", "body": "Measure useful accepted checks per turn, million tokens, tool call, and minute. Add loop detection for repeated reads/tests, adaptive test selection, and a controller that asks for implementation or verification when progress stalls.", "exit": "Qwen large remains 18/18 with at least a 30% reduction in turns or tokens across three seeds." },
+    { "title": "Tune compaction deliberately", "body": "A/B Pi compaction thresholds and summaries on the large task. Preserve requirements, failing checks, changed-file state, and the next action; measure post-compaction rework and repeated commands.", "exit": "No acceptance regression and lower duplicate work across at least three runs per configuration." },
+    { "title": "Run a controlled vLLM matrix", "body": "Hold model prompts and task seeds constant while comparing FP8 versus automatic KV dtype, prefix caching on/off, context ceilings, batch-token limits, and Qwen speculative-token counts. Optimize completion first, then time and energy.", "exit": "Select settings using paired runs with completion as a hard gate and report confidence intervals." },
+    { "title": "Add multi-agent long-running scenarios", "body": "Introduce planner/implementer/reviewer roles sharing a repository, with conflicting edits, handoffs, resumptions, and 4–8 hour tasks. Track coordination messages, duplicate work, merge conflicts, compactions, and recovery after injected tool failures.", "exit": "The stack completes two multi-agent products without manual intervention or cross-tenant/state leakage." },
+    { "title": "Establish promotion gates", "body": "Require repeated full completion, bounded p95 wall time, no hidden evaluator assumptions, no orphan processes, and a cost-per-success ceiling. Keep best-observed and final-retained profiles separate.", "exit": "A candidate is promoted only after three consecutive full passes per critical task and a documented rollback path." }
+  ],
+  "migration": [
+    { "title": "Transfer and verify artifacts", "body": "Copy the archive to the bare-metal host and verify SHA-256 before extraction. Keep the original archive immutable; extract into a versioned experiment directory.", "exit": "The recorded and locally computed SHA-256 values match." },
+    { "title": "Recreate the RHEL runtime", "body": "Build the repository Containerfile or mirror its pinned RHEL 10.2 packages. Install NVIDIA driver/toolkit versions compatible with the host, Node.js 24.22.1, Pi Coding Agent 1.2.0, and vLLM 0.31.0.", "exit": "Version inventory matches the report and all three GPUs pass CUDA health checks." },
+    { "title": "Stage models on local NVMe", "body": "Place Hugging Face snapshots, vLLM compile caches, and active benchmark workspaces on local NVMe instead of NFS. Use a durable slower volume only for copied results and backups.", "exit": "All three services reach readiness without network-filesystem stalls and cold-start timing is recorded." },
+    { "title": "Launch one model per GPU", "body": "Bind Qwen to GPU 0 on port 8001, Muse to GPU 1 on 8002, and Gemma to GPU 2 on 8003. Preserve BF16 weights, FP8 KV, 65,536 context, 0.92 memory utilization, 16 sequences, 16,384 batched tokens, prefix caching, and Qwen MTP=3.", "exit": "Health/model endpoints and Prometheus metrics are reachable for every service." },
+    { "title": "Install and validate ForgeBench", "body": "Checkout the reported commit, run npm ci where lockfiles apply, then run npm run check. Keep reference solutions inaccessible to the agent execution user.", "exit": "Reference fixtures pass 12/12, 14/14, and 18/18; empty fixtures fail." },
+    { "title": "Run a no-cost smoke and selected replay", "body": "Exercise Pi JSON mode, shell timeout injection, metric snapshots, artifact permissions, and one small task per model before the nine-cell reproduction.", "exit": "Telemetry is complete, no credentials are captured, and processes shut down cleanly." },
+    { "title": "Promote with rollback", "body": "Version the vLLM unit files, Pi configuration, prompts, and model revisions together. Keep the prior stack launch files and model symlinks so rollback is a service restart, not a rebuild.", "exit": "The reproduced completion and efficiency results meet the promotion gates." }
+  ],
+  "methodNotes": [
+    { "title": "Task design and scoring", "body": "LinkLedger, HookBin, and QueuePilot are created from empty seeded projects and graded by independent black-box tests. Per-model completion is the weighted mean of task fractions with weights 1, 3, and 8; the overall result is the mean across models." },
+    { "title": "Hardware and software", "body": "The paid pod used RHEL 10.2, three NVIDIA RTX PRO 6000 Blackwell Server Edition GPUs, vLLM 0.31.0, CUDA 13, Node.js 24.22.1, Pi Coding Agent 1.2.0, and one model service per GPU." },
+    { "title": "Model assignment", "body": "GPU 0 served Qwen/Qwen3.8-27B, GPU 1 served Muse-Glimmer-30B, and GPU 2 served Gemma-4-31B-it. Qwen used three-token MTP speculative decoding; all services used the same core cache and batching limits." },
+    { "title": "Baseline normalization", "body": "The initial HookBin evaluator over-specified a literal form tag. The usable-interface criterion was corrected and validated against references and empty fixtures. The displayed baseline credits Gemma 13/14 rather than the originally recorded 12/14; the original aggregate was 18.0%." },
+    { "title": "Selection policy", "body": "The capability matrix uses the retained final configuration where possible, not an oracle assembled solely from the best score. Muse final large is 16/18 even though an earlier candidate achieved 17/18. Corrected medium grades replace known false UI failures." },
+    { "title": "Token interpretation", "body": "Pi-accounted totals include repeated prompt/context processing and are work indicators, not unique natural-language tokens. vLLM prompt and generation counters plus prefix-cache metrics are retained in each run." },
+    { "title": "Budget boundary", "body": "The campaign used one three-GPU RunPod plus a prior aborted allocation, under the approved $100 ceiling. A separate watchdog was installed to terminate the pod at the budget deadline if the controlling session failed." },
+    { "title": "Statistical limits", "body": "The campaign was optimization-oriented rather than a fully powered model comparison. Large-task repeats revealed substantial stochastic variance, so future claims should use at least three fixed seeds per configuration and report distributions." }
+  ],
+  "artifacts": [
+    { "path": "artifacts/paid-20261023-013238/forgebench-paid-20261023.tar.gz", "contents": "Compressed copy of all 1.7 GB RunPod results: baseline, candidates, repeats, final workspaces, Pi event streams, evaluator logs, metrics, and decision logs.", "retention": "Immutable audit source; verify with the adjacent SHA-256 file before extraction." },
+    { "path": "reports/FORGEBENCH-RHEL10-OPTIMIZATION-REPORT.html", "contents": "Self-contained human-readable report with charts, tables, findings, experiment log, strategy, and migration plan.", "retention": "Primary deliverable; can be opened locally without network access." },
+    { "path": "reports/forgebench-rhel10-summary.json", "contents": "Structured source data used to render the report.", "retention": "Machine-readable basis for future comparison and regeneration." },
+    { "path": "runpod/image/Containerfile", "contents": "RHEL 10.2 runtime image definition.", "retention": "Rebuild or adapt for the bare-metal host." },
+    { "path": "runpod/launch-stack.sh", "contents": "Three-service vLLM launch configuration and model/GPU assignment.", "retention": "Starting point for systemd or container service units." },
+    { "path": "config/models.json", "contents": "Model endpoints, Pi model mapping, and retained model-specific guidance.", "retention": "Version together with the benchmark and production agent profile." }
+  ],
+  "sources": [
+    { "label": "ForgeBench repository", "url": "https://github.com/don-milsey-miller/rtx6000pro_benchmarks", "note": "Benchmark source, image, tasks, evaluators, telemetry, and report generator." },
+    { "label": "vLLM metrics documentation", "url": "https://docs.vllm.ai/en/latest/usage/metrics/", "note": "Definitions for request, cache, scheduler, and latency metrics." },
+    { "label": "vLLM cache configuration", "url": "https://docs.vllm.ai/en/latest/api/vllm/config/cache/", "note": "KV-cache dtype and prefix-cache configuration context." },
+    { "label": "Pi Coding Agent", "url": "https://pi.dev/", "note": "Agent runtime used for every benchmark attempt." },
+    { "label": "Pi JSON mode", "url": "https://pi.dev/docs/latest/json", "note": "Structured event stream used for turns, tool calls, context, and compaction metrics." },
+    { "label": "Karpathy autoresearch program", "url": "https://github.com/karpathy/autoresearch/blob/master/program.md", "note": "Iteration discipline and experiment-log inspiration; ForgeBench applies it to agent-stack optimization." },
+    { "label": "RunPod pod removal", "url": "https://docs.runpod.io/runpodctl/reference/runpodctl-remove-pods", "note": "Provider procedure used to terminate the paid pod." }
+  ]
+}

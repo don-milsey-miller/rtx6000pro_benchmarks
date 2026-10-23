@@ -54,3 +54,11 @@ The paid entry point is `runpod/run-paid-pilot.ps1`; it checks live three-GPU
 availability/pricing through the RunPod API and installs a separate hard-budget
 watchdog before remote setup begins.
 
+## Completed RHEL 10 optimization study
+
+The paid 3× RTX PRO 6000 Blackwell study, including its measured outcomes,
+experiment log, technical strategy, and bare-metal transfer plan, is published
+in [`reports/FORGEBENCH-RHEL10-OPTIMIZATION-REPORT.html`](reports/FORGEBENCH-RHEL10-OPTIMIZATION-REPORT.html).
+Its machine-readable source is
+[`reports/forgebench-rhel10-summary.json`](reports/forgebench-rhel10-summary.json).
+
