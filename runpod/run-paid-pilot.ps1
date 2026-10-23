@@ -49,7 +49,7 @@ try {
   $escapedGpu = $GpuType.Replace('"', '\"')
   $availability = Invoke-GraphQL "query { gpuTypes(input: { id: `"$escapedGpu`" }) { id displayName memoryInGb secureCloud communityCloud lowestPrice(input: { gpuCount: $GpuCount }) { uninterruptablePrice minimumBidPrice } } }"
   $gpu = @($availability.gpuTypes) | Select-Object -First 1
-  if (!$gpu -or !$gpu.communityCloud) { throw "$GpuType is unavailable in Community Cloud" }
+  if (!$gpu -or (!$gpu.communityCloud -and !$gpu.secureCloud)) { throw "$GpuType is unavailable" }
   $hourlyRate = [double]$gpu.lowestPrice.uninterruptablePrice
   if ($hourlyRate -le 0) { throw "RunPod returned no on-demand price for $GpuCount GPUs" }
   $maxRuntimeSeconds = [math]::Floor(($BudgetUsd * (1 - $SafetyFraction) / $hourlyRate) * 3600)
@@ -74,23 +74,56 @@ try {
   $publicKey = (Get-Content -Raw -LiteralPath "$SshKey.pub").Trim()
   $publicKeyB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($publicKey))
   $environment = (@{ PUBLIC_KEY_B64 = $publicKeyB64 } | ConvertTo-Json -Compress).Replace('"', '\"')
-  $createArgs = @(
-    "pod", "create", "--image", $Image, "--name", "forgebench-$stamp",
-    "--gpu-id", $GpuType, "--gpu-count", "$GpuCount", "--cloud-type", "COMMUNITY",
-    "--container-disk-in-gb", "$ContainerDiskGb", "--volume-in-gb", "$VolumeGb",
-    "--volume-mount-path", "/workspace", "--ports", "22/tcp", "--ssh",
-    "--env", $environment, "--min-cuda-version", "13.0"
-  )
-  $createdJson = & $RunPodCtl @createArgs
-  if ($LASTEXITCODE -ne 0) { throw "RunPod creation failed: $createdJson" }
-  $created = $createdJson | ConvertFrom-Json
+  $podName = "forgebench-$stamp"
+  $clouds = @("COMMUNITY", "SECURE")
+  $placementDeadline = [datetime]::UtcNow.AddHours(6)
+  $placementAttempt = 0
+  $created = $null
+  $selectedCloud = $null
+  while (!$created -and [datetime]::UtcNow -lt $placementDeadline) {
+    $selectedCloud = $clouds[$placementAttempt % $clouds.Count]
+    $createArgs = @(
+      "pod", "create", "--image", $Image, "--name", $podName,
+      "--gpu-id", $GpuType, "--gpu-count", "$GpuCount", "--cloud-type", $selectedCloud,
+      "--container-disk-in-gb", "$ContainerDiskGb", "--volume-in-gb", "$VolumeGb",
+      "--volume-mount-path", "/workspace", "--ports", "22/tcp", "--ssh",
+      "--env", $environment, "--min-cuda-version", "13.0"
+    )
+    $createdText = (& $RunPodCtl @createArgs 2>&1 | Out-String).Trim()
+    $createExit = $LASTEXITCODE
+    if ($createExit -eq 0) {
+      $created = $createdText | ConvertFrom-Json
+      break
+    }
+
+    # A transport failure can occur after RunPod accepted the request. Look for
+    # the unique name before retrying so the controller can never create two Pods.
+    $existingText = (& $RunPodCtl pod list --all 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -eq 0 -and $existingText) {
+      $existing = @($existingText | ConvertFrom-Json) | Where-Object { $_.name -eq $podName } | Select-Object -First 1
+      if ($existing) { $created = $existing; break }
+    }
+    if ($createdText -notmatch "no longer any instances|no instances available|capacity|unavailable") {
+      throw "RunPod creation failed: $createdText"
+    }
+    $placementAttempt++
+    if (($placementAttempt % 4) -eq 0) { Write-Host "Waiting for a three-GPU placement; tried both cloud tiers $placementAttempt times." }
+    Start-Sleep -Seconds 30
+  }
+  if (!$created) { throw "No three-GPU placement became available within six hours" }
   $podId = [string]$created.id
   if ([string]::IsNullOrWhiteSpace($podId)) { throw "RunPod did not return a Pod id" }
-  if ($created.costPerHr) { $hourlyRate = [double]$created.costPerHr }
+  if (($created.PSObject.Properties.Name -contains "costPerHr") -and $created.costPerHr) {
+    $hourlyRate = [double]$created.costPerHr
+  }
+  $maxRuntimeSeconds = [math]::Floor(($BudgetUsd * (1 - $SafetyFraction) / $hourlyRate) * 3600)
+  if ($maxRuntimeSeconds -lt 3600) { throw "actual Pod rate leaves less than one hour after the safety reserve" }
   $startedAt = [datetime]::UtcNow
   $state.podId = $podId
   $state.createdAt = $startedAt.ToString("o")
   $state.actualHourlyRateUsd = $hourlyRate
+  $state.maximumRuntimeSeconds = $maxRuntimeSeconds
+  $state.cloudType = $selectedCloud
   $state | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $localRun "provision-result.json")
 
   $deadline = $startedAt.AddSeconds($maxRuntimeSeconds)

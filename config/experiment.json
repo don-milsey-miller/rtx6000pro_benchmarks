@@ -5,7 +5,7 @@
   "budgetSafetyFraction": 0.10,
   "gpuType": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
   "gpuCount": 3,
-  "cloudType": "COMMUNITY",
+  "cloudType": "ANY",
   "runsPerCell": 1,
   "parallelModels": 3,
   "profile": "optimized",
