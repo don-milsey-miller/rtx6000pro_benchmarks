@@ -2,7 +2,7 @@
 param(
   [double]$BudgetUsd = 100.00,
   [double]$SafetyFraction = 0.10,
-  [string]$Image = "ghcr.io/don-milsey-miller/rtx6000pro-benchmarks-rhel10:latest",
+  [string]$Image = "ttl.sh/forgebench-rhel10-01a1613354a177e386dfe5e80dd21601:24h",
   [string]$GpuType = "NVIDIA RTX PRO 6000 Blackwell Server Edition",
   [int]$GpuCount = 3,
   [int]$ContainerDiskGb = 60,

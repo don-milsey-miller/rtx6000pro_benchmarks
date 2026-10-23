@@ -35,7 +35,9 @@ jobs:
           context: runpod/image
           file: runpod/image/Containerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ttl.sh/forgebench-rhel10-01a1613354a177e386dfe5e80dd21601:24h
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

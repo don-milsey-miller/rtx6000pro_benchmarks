@@ -41,3 +41,8 @@ RunPod CLI, starts the detached watchdog, waits for completion, downloads the
 artifact bundle, finalizes cost metadata, and deletes the Pod in a `finally`
 block.
 
+The workflow publishes both a durable GHCR image and a unique anonymous
+`ttl.sh` tag. The controller uses the 24-hour tag for the paid pilot so no
+GitHub registry credential is copied to the Pod; its lifetime is longer than
+the budget-derived maximum Pod lifetime.
+
