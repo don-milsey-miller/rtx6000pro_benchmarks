@@ -12,7 +12,8 @@
     "build:bundles": "node scripts/build-bundles.mjs",
     "dry-run": "node scripts/dry-run.mjs",
     "check": "npm test && npm run validate && npm run build:bundles && npm run dry-run",
-    "report": "node scripts/generate-report.mjs"
+    "report": "node scripts/generate-report.mjs",
+    "aggregate": "node scripts/aggregate-runs.mjs"
   }
 }
 

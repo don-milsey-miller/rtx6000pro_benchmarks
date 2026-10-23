@@ -34,7 +34,8 @@
       "endpoint": "http://127.0.0.1:8003/v1",
       "metrics": "http://127.0.0.1:8003/metrics",
       "contextWindow": 65536,
-      "thinking": "medium"
+      "thinking": "medium",
+      "systemPromptSuffix": "Use finite timeouts for tests and server commands. If a command stalls, stop it, diagnose, and continue rather than waiting indefinitely."
     }
   ]
 }
