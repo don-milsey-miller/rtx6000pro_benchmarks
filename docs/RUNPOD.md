@@ -46,3 +46,9 @@ The workflow publishes both a durable GHCR image and a unique anonymous
 GitHub registry credential is copied to the Pod; its lifetime is longer than
 the budget-derived maximum Pod lifetime.
 
+Pi executes as the unprivileged `bench` user. Hidden evaluators and reference
+implementations are root-only. When the container runtime grants `NET_ADMIN`,
+an nftables owner rule restricts `bench` to loopback; otherwise the recorded
+fallback combines Pi's offline mode with dead external proxy variables while
+preserving loopback access to vLLM.
+

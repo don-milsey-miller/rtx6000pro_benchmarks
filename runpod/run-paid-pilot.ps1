@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
   [double]$BudgetUsd = 100.00,
+  [double]$PriorSpendUsd = 0.00,
   [double]$SafetyFraction = 0.10,
   [string]$Image = "ttl.sh/forgebench-rhel10-01a1613354a177e386dfe5e80dd21601:24h",
   [string]$GpuType = "NVIDIA RTX PRO 6000 Blackwell Server Edition",
@@ -65,6 +66,7 @@ try {
     gpuCount = $GpuCount
     hourlyRateUsd = $hourlyRate
     budgetUsd = $BudgetUsd
+    priorSpendUsd = $PriorSpendUsd
     safetyFraction = $SafetyFraction
     maximumRuntimeSeconds = $maxRuntimeSeconds
     image = $Image
@@ -166,7 +168,7 @@ try {
   $hostName = [string]$sshInfo.ip
   $sshPort = [int]$sshInfo.port
 
-  Invoke-Ssh $hostName $sshPort "git clone --depth 1 $Repository /workspace/benchmark && chmod +x /workspace/benchmark/runpod/*.sh && nohup bash /workspace/benchmark/runpod/execute.sh >/workspace/results/controller-execute.log 2>&1 </dev/null &"
+  Invoke-Ssh $hostName $sshPort "git clone --depth 1 $Repository /workspace/benchmark && chmod +x /workspace/benchmark/runpod/*.sh && setsid -f bash /workspace/benchmark/runpod/execute.sh >/workspace/results/controller-execute.log 2>&1 </dev/null"
   Write-Host "Remote benchmark started."
 
   $lastProgress = [datetime]::MinValue
@@ -188,10 +190,13 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "artifact extraction failed" }
 
   $elapsedHours = ([datetime]::UtcNow - $startedAt).TotalHours
-  $billedUsd = [math]::Round($elapsedHours * $hourlyRate, 4)
+  $currentRunUsd = [math]::Round($elapsedHours * $hourlyRate, 4)
+  $billedUsd = [math]::Round($PriorSpendUsd + $currentRunUsd, 4)
   $resultsJson = Join-Path $localRun "results\forgebench\results.json"
   $reportHtml = Join-Path $localRun "FORGEBENCH-PAID-PILOT.html"
   $env:BENCH_BILLED_USD = "$billedUsd"
+  $env:BENCH_CURRENT_RUN_USD = "$currentRunUsd"
+  $env:BENCH_PRIOR_SPEND_USD = "$PriorSpendUsd"
   $env:BENCH_RUNPOD_POD_ID = $podId
   $env:BENCH_RUNPOD_HOURLY_RATE = "$hourlyRate"
   $env:BENCH_RUNPOD_ELAPSED_HOURS = "$elapsedHours"

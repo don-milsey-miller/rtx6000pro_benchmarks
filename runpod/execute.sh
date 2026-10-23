@@ -27,12 +27,18 @@ chmod 0711 "$benchmark"
 chmod 0700 "$benchmark/evaluators" "$benchmark/validation"
 chown -R root:root "$benchmark/evaluators" "$benchmark/validation"
 
+network_isolation=pi-offline-and-proxy
 nft delete table inet forgebench 2>/dev/null || true
-nft add table inet forgebench
-nft 'add chain inet forgebench output { type filter hook output priority 0; policy accept; }'
-nft add rule inet forgebench output meta skuid bench ip daddr 127.0.0.0/8 accept
-nft add rule inet forgebench output meta skuid bench ip6 daddr ::1 accept
-nft add rule inet forgebench output meta skuid bench reject
+if nft add table inet forgebench 2>/dev/null; then
+  nft 'add chain inet forgebench output { type filter hook output priority 0; policy accept; }'
+  nft add rule inet forgebench output meta skuid bench ip daddr 127.0.0.0/8 accept
+  nft add rule inet forgebench output meta skuid bench ip6 daddr ::1 accept
+  nft add rule inet forgebench output meta skuid bench reject
+  network_isolation=uid-egress-filter
+else
+  echo "warning: container lacks NET_ADMIN; enforcing Pi offline mode and dead external proxy instead"
+fi
+printf '{"mode":"%s"}\n' "$network_isolation" > "$workspace/results/network-isolation.json"
 
 cd "$benchmark"
 npm test
@@ -47,4 +53,6 @@ PI_CODING_AGENT_DIR=$workspace/pi-config \
 PI_PATH=$workspace/pi/node_modules/.bin/pi \
 BENCH_AGENT_USER=bench \
 BENCH_ARTIFACTS=$artifacts \
+HTTP_PROXY=http://127.0.0.1:9 HTTPS_PROXY=http://127.0.0.1:9 ALL_PROXY=http://127.0.0.1:9 \
+NO_PROXY=127.0.0.1,localhost \
   node scripts/run-suite.mjs

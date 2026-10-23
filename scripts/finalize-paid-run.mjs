@@ -17,6 +17,8 @@ data.metadata = {
     podId: process.env.BENCH_RUNPOD_POD_ID ?? null,
     hourlyRateUsd: Number(process.env.BENCH_RUNPOD_HOURLY_RATE ?? 0),
     elapsedHours: Number(process.env.BENCH_RUNPOD_ELAPSED_HOURS ?? 0),
+    currentRunUsd: Number(process.env.BENCH_CURRENT_RUN_USD ?? 0),
+    priorAbortedSetupUsd: Number(process.env.BENCH_PRIOR_SPEND_USD ?? 0),
   },
 };
 data.summary = scoreSuite(data.results, billedUsd);
