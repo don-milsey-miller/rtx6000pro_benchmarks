@@ -4,7 +4,10 @@ set -Eeuo pipefail
 mkdir -p /root/.ssh /var/run/sshd /workspace
 chmod 0700 /root/.ssh
 
-if [[ -n "${PUBLIC_KEY:-}" ]]; then
+if [[ -n "${PUBLIC_KEY_B64:-}" ]]; then
+  printf '%s' "$PUBLIC_KEY_B64" | base64 --decode > /root/.ssh/authorized_keys
+  chmod 0600 /root/.ssh/authorized_keys
+elif [[ -n "${PUBLIC_KEY:-}" ]]; then
   printf '%s\n' "${PUBLIC_KEY}" > /root/.ssh/authorized_keys
   chmod 0600 /root/.ssh/authorized_keys
 fi

@@ -72,7 +72,8 @@ try {
   $state | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $localRun "provision-request.json")
 
   $publicKey = (Get-Content -Raw -LiteralPath "$SshKey.pub").Trim()
-  $environment = @{ PUBLIC_KEY = $publicKey } | ConvertTo-Json -Compress
+  $publicKeyB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($publicKey))
+  $environment = (@{ PUBLIC_KEY_B64 = $publicKeyB64 } | ConvertTo-Json -Compress).Replace('"', '\"')
   $createArgs = @(
     "pod", "create", "--image", $Image, "--name", "forgebench-$stamp",
     "--gpu-id", $GpuType, "--gpu-count", "$GpuCount", "--cloud-type", "COMMUNITY",
