@@ -14,7 +14,8 @@ Resources and events must be strictly tenant-scoped.
 
 - `GET /health` → `200 {"status":"ok"}`.
 - `POST /api/projects` accepts `{name}` and returns `201` with
-  `{id,name,createdAt}`. `GET /api/projects` lists the caller's projects.
+  `{id,name,createdAt}`. `GET /api/projects` returns the caller's projects as a
+  JSON array of `{id,name,createdAt}` objects.
 - `POST /api/projects/:projectId/issues` accepts
   `{title,description?,priority?}` and returns `201`. Priority is one of
   `low|normal|high|urgent`, default `normal`. Support `Idempotency-Key`: repeating
