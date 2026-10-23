@@ -107,7 +107,9 @@ try {
     # the unique name before retrying so the controller can never create two Pods.
     $existingText = (& $RunPodCtl pod list --all 2>$null | Out-String).Trim()
     if ($LASTEXITCODE -eq 0 -and $existingText) {
-      $existing = @($existingText | ConvertFrom-Json) | Where-Object { $_.name -eq $podName } | Select-Object -First 1
+      $existing = @($existingText | ConvertFrom-Json) | Where-Object {
+        $_ -and ($_.PSObject.Properties.Name -contains "name") -and $_.name -eq $podName
+      } | Select-Object -First 1
       if ($existing) { $created = $existing; break }
     }
     if ($createdText -notmatch "no longer any instances|no instances available|capacity|unavailable") {
