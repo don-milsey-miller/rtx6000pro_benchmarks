@@ -43,6 +43,8 @@ printf '{"mode":"%s"}\n' "$network_isolation" > "$workspace/results/network-isol
 cd "$benchmark"
 npm test
 npm run build:bundles
+runuser --user bench -- test -w "$workspace/pi-config"
+"$benchmark/runpod/smoke-pi.sh"
 PI_CODING_AGENT_DIR=$workspace/pi-config \
 PI_PATH=$workspace/pi/node_modules/.bin/pi \
 BENCH_AGENT_USER=bench \

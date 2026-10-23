@@ -52,3 +52,8 @@ an nftables owner rule restricts `bench` to loopback; otherwise the recorded
 fallback combines Pi's offline mode with dead external proxy variables while
 preserving loopback access to vLLM.
 
+After all three vLLM health checks pass, a real unprivileged Pi request must
+produce a valid assistant-message event before any measured attempt begins.
+This catches provider configuration, session permissions, model routing, and
+Pi/vLLM protocol errors without misclassifying them as task failures.
+
