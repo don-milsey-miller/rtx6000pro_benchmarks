@@ -33,3 +33,15 @@ test("reports malformed lines", () => {
   assert.equal(parsed.errors.length, 1);
 });
 
+test("counts one durable compaction instead of stdout start and end events", () => {
+  const stream = [
+    { type: "agent_start" },
+    { type: "compaction_start", tokensBefore: 60000 },
+    { type: "compaction_end", tokensBefore: 60000 },
+  ].map(JSON.stringify).join("\n");
+  const session = JSON.stringify({ type: "compaction", tokensBefore: 60000, firstKeptEntryId: "kept" });
+  const summary = summarizePiEvents(stream, session);
+  assert.equal(summary.compactionCount, 1);
+  assert.equal(summary.compactions[0].firstKeptEntryId, "kept");
+});
+

@@ -74,16 +74,19 @@ export function summarizePiEvents(text, sessionText = "") {
     if (duration > 0) (toolDurationsMs[name] ??= []).push(duration);
   }
 
+  const sessionCompactions = session.events.filter((event) => (event?.entry ?? event)?.type === "compaction");
+  const streamCompactions = parsed.events.filter((event) =>
+    event?.type === "compaction" || event?.type === "compaction_end");
   const compactions = [];
-  for (const event of [...parsed.events, ...session.events]) {
+  // A saved session has one durable entry per completed compaction. Prefer it
+  // over stdout lifecycle events, where start/end describe the same operation.
+  for (const event of sessionCompactions.length ? sessionCompactions : streamCompactions) {
     const entry = event?.entry ?? event;
-    if (entry?.type === "compaction" || /compact/.test(String(event?.type ?? ""))) {
-      compactions.push({
-        type: event.type,
-        tokensBefore: Number(entry.tokensBefore ?? event.tokensBefore ?? 0),
-        firstKeptEntryId: entry.firstKeptEntryId ?? null,
-      });
-    }
+    compactions.push({
+      type: entry.type ?? event.type,
+      tokensBefore: Number(entry.tokensBefore ?? event.tokensBefore ?? 0),
+      firstKeptEntryId: entry.firstKeptEntryId ?? null,
+    });
   }
   const uniqueCompactions = compactions.filter((item, index, all) =>
     index === all.findIndex((other) => other.type === item.type && other.tokensBefore === item.tokensBefore && other.firstKeptEntryId === item.firstKeptEntryId));
