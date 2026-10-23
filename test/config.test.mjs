@@ -19,7 +19,17 @@ const experiment = validateExperiment({
   budgetSafetyFraction: 0.1,
   gpuCount: 2,
   runsPerCell: 2,
-  repairPolicy: { maxAttempts: 3, tokenLimit: null, wallTimeLimit: "provider-budget" },
+  repairPolicy: {
+    maxAttempts: 3,
+    tokenLimit: null,
+    wallTimeLimit: "provider-budget",
+    feedbackBoundary: {
+      publicSources: ["tasks/*/seed/SPEC.md", "tasks/*/seed/test/public.test.mjs"],
+      heldOutSources: ["evaluators/**", "validation/reference/**"],
+      allowedFeedback: ["public requirement id"],
+      prohibitedFeedback: ["held-out check names"],
+    },
+  },
   promotionGates: { runpodCampaignSpendMaxUsd: 100 },
 });
 
@@ -33,6 +43,12 @@ test("builds complete rotated run plan", () => {
 
 test("calculates budget-safe runtime", () => {
   assert.equal(budgetRuntimeSeconds(experiment, 10), 32_400);
+});
+
+test("requires an explicit public and held-out repair boundary", () => {
+  const missingBoundary = structuredClone(experiment);
+  delete missingBoundary.repairPolicy.feedbackBoundary;
+  assert.throws(() => validateExperiment(missingBoundary), /repair public sources must be explicit/);
 });
 
 test("filters targeted research cells without changing run identity", () => {

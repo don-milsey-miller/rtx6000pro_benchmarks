@@ -74,8 +74,11 @@ policy is therefore:
    floor. These are reproduction bands, not promotion criteria.
 2. WP-03 permits up to three repair attempts. Tokens and repair wall time are
    recorded without separate caps; the provider watchdog remains the hard
-   bound. The public-versus-held-out test partition must still be classified
-   before repair prompts are enabled.
+   bound. Repair feedback may use only each task's published `SPEC.md`,
+   `test/public.test.mjs`, and safe diagnostics derived from those public
+   obligations. Everything under `evaluators/` and `validation/reference/`
+   remains held out; its check names, source, reference behavior, and private
+   output may not enter a repair prompt.
 3. Promotion retains correctness gates: three consecutive full critical-task
    passes, no orphan processes, and no secret leakage. p95 wall time, token use,
    and energy are report-only. There is no per-success dollar cap separate from

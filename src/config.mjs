@@ -72,6 +72,11 @@ export function validateExperiment(experiment) {
   assert(Number.isInteger(experiment.runsPerCell) && experiment.runsPerCell > 0, "runsPerCell must be positive");
   assert(experiment.repairPolicy?.maxAttempts === 3, "repairPolicy.maxAttempts must be 3 for this campaign");
   assert(experiment.repairPolicy.tokenLimit === null, "repair token usage must be report-only");
+  const boundary = experiment.repairPolicy.feedbackBoundary;
+  assert(Array.isArray(boundary?.publicSources) && boundary.publicSources.length > 0, "repair public sources must be explicit");
+  assert(Array.isArray(boundary?.heldOutSources) && boundary.heldOutSources.length > 0, "repair held-out sources must be explicit");
+  assert(Array.isArray(boundary?.allowedFeedback) && boundary.allowedFeedback.length > 0, "allowed repair feedback must be explicit");
+  assert(Array.isArray(boundary?.prohibitedFeedback) && boundary.prohibitedFeedback.length > 0, "prohibited repair feedback must be explicit");
   assert(experiment.promotionGates?.runpodCampaignSpendMaxUsd === experiment.budgetUsd, "promotion spend gate must match budgetUsd");
   return experiment;
 }

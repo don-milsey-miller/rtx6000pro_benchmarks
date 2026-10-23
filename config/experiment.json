@@ -12,7 +12,28 @@
   "repairPolicy": {
     "maxAttempts": 3,
     "tokenLimit": null,
-    "wallTimeLimit": "provider-budget"
+    "wallTimeLimit": "provider-budget",
+    "feedbackBoundary": {
+      "publicSources": [
+        "tasks/*/seed/SPEC.md",
+        "tasks/*/seed/test/public.test.mjs"
+      ],
+      "heldOutSources": [
+        "evaluators/**",
+        "validation/reference/**"
+      ],
+      "allowedFeedback": [
+        "public requirement id",
+        "public test name",
+        "expected and observed public behavior",
+        "safe stack trace"
+      ],
+      "prohibitedFeedback": [
+        "held-out check names",
+        "reference implementation details",
+        "evaluator source or private output details"
+      ]
+    }
   },
   "historicalCompatibility": {
     "referenceChecksMustMatchExactly": true,
