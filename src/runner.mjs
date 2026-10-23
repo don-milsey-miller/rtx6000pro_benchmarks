@@ -38,6 +38,11 @@ async function findSessionText(directory) {
 }
 
 async function gitEvidence(workspace) {
+  // Intent-to-add makes Git expose untracked product files in diff/numstat
+  // without staging their contents. Most benchmark seeds intentionally omit
+  // src/, so ignoring untracked files would discard the agent's main artifact.
+  const intent = await runBounded("git", ["add", "-N", "."], { cwd: workspace, timeoutMs: 30_000 });
+  if (intent.code !== 0) throw new Error(`git add -N failed: ${intent.stderr}`);
   const [status, diff, numstat] = await Promise.all([
     runBounded("git", ["status", "--short"], { cwd: workspace, timeoutMs: 30_000 }),
     runBounded("git", ["diff", "--binary", "HEAD"], { cwd: workspace, timeoutMs: 30_000, maxOutputBytes: 100 * 1024 * 1024 }),

@@ -26,6 +26,9 @@ try {
     }));
   }
   if (results.some((result) => result.classification !== "passed")) throw new Error(`dry run failed: ${JSON.stringify(results.map(({ runId, classification }) => ({ runId, classification })))}`);
+  if (results.some((result) => !result.changes.changedFiles.length || !result.changes.lineStats.length)) {
+    throw new Error("dry run failed to preserve untracked-file Git evidence");
+  }
   console.log(JSON.stringify(scoreSuite(results), null, 2));
   console.log("end-to-end dry run passed");
 } finally {
