@@ -105,7 +105,14 @@ export async function runAttempt({
     const ownership = await runBounded("chown", ["-R", `${agentUser}:${agentUser}`, workspace, sessionDirectory], {
       timeoutMs: 30_000,
     });
-    if (ownership.code !== 0) throw new Error(`unable to isolate agent workspace: ${ownership.stderr}`);
+    if (ownership.code !== 0) {
+      const permissions = await runBounded("chmod", ["-R", "a+rwX", workspace, sessionDirectory], {
+        timeoutMs: 30_000,
+      });
+      if (permissions.code !== 0) {
+        throw new Error(`unable to prepare agent workspace: ${ownership.stderr}\n${permissions.stderr}`);
+      }
+    }
   }
 
   let metricsBefore = "";

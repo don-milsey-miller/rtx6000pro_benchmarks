@@ -52,6 +52,11 @@ an nftables owner rule restricts `bench` to loopback; otherwise the recorded
 fallback combines Pi's offline mode with dead external proxy variables while
 preserving loopback access to vLLM.
 
+RunPod volumes can reject ownership changes. Agent workspaces and Pi's small
+runtime-config directory therefore fall back to explicit write permissions;
+the benchmark source, evaluators, and reference fixtures remain root-only and
+outside those writable paths.
+
 After all three vLLM health checks pass, a real unprivileged Pi request must
 produce a valid assistant-message event before any measured attempt begins.
 This catches provider configuration, session permissions, model routing, and

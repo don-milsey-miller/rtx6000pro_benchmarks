@@ -37,7 +37,8 @@ fi
 
 install -m 0644 "$benchmark/runpod/pi-models.json" "$workspace/pi-config/models.json"
 install -m 0644 "$benchmark/runpod/pi-settings.json" "$workspace/pi-config/settings.json"
-chown -R bench:bench "$workspace/pi-config"
+chmod 0777 "$workspace/pi-config"
+chmod 0666 "$workspace/pi-config/models.json" "$workspace/pi-config/settings.json"
 
 {
   echo "captured_at=$(date --iso-8601=seconds)"

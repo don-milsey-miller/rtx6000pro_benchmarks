@@ -5,7 +5,9 @@ workspace=/workspace
 smoke_dir=$workspace/results/pi-smoke
 session_dir=$smoke_dir/session
 mkdir -p "$session_dir"
-chown -R bench:bench "$smoke_dir"
+if ! chown -R bench:bench "$smoke_dir" 2>/dev/null; then
+  chmod -R a+rwX "$smoke_dir"
+fi
 
 if ! runuser --user bench -- env \
   PI_CODING_AGENT_DIR=$workspace/pi-config \
