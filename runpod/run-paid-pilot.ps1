@@ -110,7 +110,9 @@ try {
 
   $publicKey = (Get-Content -Raw -LiteralPath "$SshKey.pub").Trim()
   $publicKeyB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($publicKey))
-  $environment = (@{ PUBLIC_KEY_B64 = $publicKeyB64 } | ConvertTo-Json -Compress).Replace('"', '\"')
+  # Argument arrays bypass shell parsing, so pass valid JSON directly. Escaping
+  # the quotes here would make the backslashes part of the value seen by the CLI.
+  $environment = @{ PUBLIC_KEY_B64 = $publicKeyB64 } | ConvertTo-Json -Compress
   $podName = "forgebench-$stamp"
   $clouds = @("COMMUNITY", "SECURE")
   $placementDeadline = [datetime]::UtcNow.AddHours(6)
