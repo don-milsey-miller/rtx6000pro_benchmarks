@@ -77,7 +77,7 @@ try {
     "pod", "create", "--image", $Image, "--name", "forgebench-$stamp",
     "--gpu-id", $GpuType, "--gpu-count", "$GpuCount", "--cloud-type", "COMMUNITY",
     "--container-disk-in-gb", "$ContainerDiskGb", "--volume-in-gb", "$VolumeGb",
-    "--volume-mount-path", "/workspace", "--ports", "22/tcp", "--public-ip", "--ssh",
+    "--volume-mount-path", "/workspace", "--ports", "22/tcp", "--ssh",
     "--env", $environment, "--min-cuda-version", "13.0"
   )
   $createdJson = & $RunPodCtl @createArgs
