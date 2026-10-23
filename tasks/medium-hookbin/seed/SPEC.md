@@ -20,13 +20,16 @@ Start with `npm start`; bind to `HOST`/`PORT` and persist at `DATA_FILE`.
 - `GET /api/inboxes/:key/events` returns newest-first
   `{items,nextCursor}` and supports `limit` 1–100, opaque `cursor`, and optional
   `contentType` filter.
-- `GET /api/inboxes/:key/events/:eventId` returns one event with its body encoded
-  as base64, or `404`.
+- `GET /api/inboxes/:key/events/:eventId` returns
+  `{id,method,contentType,headers,body,receivedAt,replays}`, with the exact body
+  encoded as base64 and `replays` containing the replay-history entries, or
+  `404`.
 - `POST /api/inboxes/:key/events/:eventId/replay` accepts
   `{"targetUrl":"http://127.0.0.1:.../..."}`. For safety, only loopback HTTP
   targets are allowed. Send the original body and content type with an
-  `X-HookBin-Replay: 1` header. Return `200` with the downstream status and append
-  `{targetUrl,status,attemptedAt}` to replay history. Apply a five-second timeout.
+  `X-HookBin-Replay: 1` header. Return `200 {"status":<downstream status>}` and
+  append `{targetUrl,status,attemptedAt}` to the event's `replays` history. Apply
+  a five-second timeout.
 - `DELETE /api/inboxes/:key/events` deletes that inbox's events and returns `204`.
 
 Use consistent JSON errors. Malformed input, unknown inboxes, authorization
