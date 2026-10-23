@@ -152,7 +152,12 @@ try {
     $raw = & $RunPodCtl ssh info $podId 2>$null
     if ($LASTEXITCODE -eq 0) {
       $candidate = $raw | ConvertFrom-Json
-      if ($candidate.ip -and $candidate.port) { $sshInfo = $candidate; break }
+      if (($candidate.PSObject.Properties.Name -contains "ip") -and
+          ($candidate.PSObject.Properties.Name -contains "port") -and
+          $candidate.ip -and $candidate.port) {
+        $sshInfo = $candidate
+        break
+      }
     }
     if (($attempt % 12) -eq 0) { Write-Host "Waiting for the RHEL image and SSH mapping ($($attempt * 10)s elapsed)..." }
     Start-Sleep -Seconds 10
