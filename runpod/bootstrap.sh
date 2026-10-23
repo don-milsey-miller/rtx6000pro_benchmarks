@@ -40,6 +40,19 @@ install -m 0644 "$benchmark/runpod/pi-settings.json" "$workspace/pi-config/setti
 chmod 0777 "$workspace/pi-config"
 chmod 0666 "$workspace/pi-config/models.json" "$workspace/pi-config/settings.json"
 
+# Pi's find and grep tools lazily fetch fd and rg. Fetch them before network
+# isolation, as the same unprivileged user that runs the agent; extracting as
+# root fails on root-squashed RunPod volumes when tar restores archive owners.
+runuser --user bench -- env -u PI_OFFLINE PI_CODING_AGENT_DIR="$workspace/pi-config" \
+  node --input-type=module -e '
+    const { ensureTool } = await import("file:///workspace/pi/node_modules/@earendil-works/pi-coding-agent/dist/utils/tools-manager.js");
+    for (const tool of ["fd", "rg"]) {
+      const path = await ensureTool(tool, ({ type, message }) => console.error(`${type}: ${message}`));
+      if (!path) throw new Error(`unable to provision Pi helper: ${tool}`);
+      console.log(`${tool}=${path}`);
+    }
+  '
+
 {
   echo "captured_at=$(date --iso-8601=seconds)"
   echo "os_pretty_name=$(source /etc/os-release; printf '%s' "$PRETTY_NAME")"
@@ -47,6 +60,8 @@ chmod 0666 "$workspace/pi-config/models.json" "$workspace/pi-config/settings.jso
   echo "node=$(node --version)"
   echo "npm=$(npm --version)"
   echo "pi=$($workspace/pi/node_modules/.bin/pi --version 2>/dev/null || true)"
+  echo "fd=$($workspace/pi-config/bin/fd --version | head -n 1)"
+  echo "rg=$($workspace/pi-config/bin/rg --version | head -n 1)"
   echo "uv=$($workspace/bin/uv --version)"
   echo "vllm=$($workspace/venvs/vllm/bin/python -c 'import vllm; print(vllm.__version__)')"
   echo "torch=$($workspace/venvs/vllm/bin/python -c 'import torch; print(torch.__version__)')"
