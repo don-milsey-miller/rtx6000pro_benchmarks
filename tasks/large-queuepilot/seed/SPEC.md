@@ -20,7 +20,8 @@ Resources and events must be strictly tenant-scoped.
   `{title,description?,priority?}` and returns `201`. Priority is one of
   `low|normal|high|urgent`, default `normal`. Support `Idempotency-Key`: repeating
   the same create request for the same tenant/key must return the original issue
-  and must not duplicate audit or SSE events.
+  and must not duplicate audit or SSE events. A new issue has `status:"open"`
+  and numeric `version:1`; the response includes those fields.
 - `GET /api/issues` returns newest-first `{items,nextCursor}` with `limit` 1–100,
   opaque `cursor`, and optional `projectId`, `status`, `priority`, and
   case-insensitive `q` filters.
@@ -35,14 +36,18 @@ Resources and events must be strictly tenant-scoped.
 - `GET /api/audit` returns tenant-scoped newest-first `{items,nextCursor}` with
   `limit` and `cursor`. Record project creation, issue creation/update, comment,
   and idempotent create only once. Each event includes `id,type,resourceId,at` and
-  a useful details object.
+  a useful details object. Use the exact type strings `project.created`,
+  `issue.created`, `issue.updated`, and `comment.created`.
 - `GET /api/events` is an authenticated Server-Sent Events stream. Send an
   initial `ready` event, keep the connection alive, and publish tenant-scoped
-  project, issue, and comment events. Remove disconnected clients.
+  events named `project.created`, `issue.created`, `issue.updated`, and
+  `comment.created`. Remove disconnected clients.
 
 Use consistent JSON errors. Enforce sensible string limits, a 256 KiB body
 limit, safe cursor parsing, and unknown-route handling. Malformed requests and
-concurrent writes must not crash the process.
+concurrent writes must not crash the process. Malformed JSON and invalid fields
+return `400`; bodies above 256 KiB return `413` while leaving the service
+healthy.
 
 ## Durability and user interface
 
