@@ -30,8 +30,9 @@ Start with `npm start`; bind to `HOST`/`PORT` and persist at `DATA_FILE`.
 - `DELETE /api/inboxes/:key/events` deletes that inbox's events and returns `204`.
 
 Use consistent JSON errors. Malformed input, unknown inboxes, authorization
-failures, oversized bodies, and downstream replay failures must not crash the
-service or expose a secret.
+failures, and downstream replay failures must not crash the service or expose a
+secret. Webhook bodies above 256 KiB must return `413` with a JSON error and
+leave the service healthy for later requests.
 
 ## Persistence and UI
 

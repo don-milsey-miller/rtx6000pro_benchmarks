@@ -21,8 +21,9 @@ page. It must start with `npm start`, bind to `HOST` (default `127.0.0.1`) and
 - `DELETE /api/bookmarks/:id` returns `204` or `404`.
 
 Use JSON error bodies shaped as `{"error":{"code":"...","message":"..."}}`.
-Malformed JSON, invalid input, unknown routes, and request bodies above 64 KiB
-must not crash the service.
+Malformed JSON, invalid input, and unknown routes must not crash the service.
+Request bodies above 64 KiB must return `413` with the same JSON error shape and
+leave the service healthy for later requests.
 
 ## Persistence and UI
 
