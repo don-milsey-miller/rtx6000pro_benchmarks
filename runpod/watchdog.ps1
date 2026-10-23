@@ -19,6 +19,11 @@ while ([datetime]::UtcNow -lt $DeadlineUtc.ToUniversalTime()) {
   Start-Sleep -Seconds 30
 }
 
+if (Test-Path -LiteralPath $CompletionMarker) {
+  "watchdog_cancelled=$([datetime]::UtcNow.ToString('o'))" | Add-Content -LiteralPath $LogPath
+  exit 0
+}
+
 "watchdog_deadline_reached=$([datetime]::UtcNow.ToString('o'))" | Add-Content -LiteralPath $LogPath
 & $RunPodCtl pod delete $PodId 2>&1 | Add-Content -LiteralPath $LogPath
 "watchdog_delete_finished=$([datetime]::UtcNow.ToString('o')) exit=$LASTEXITCODE" | Add-Content -LiteralPath $LogPath
