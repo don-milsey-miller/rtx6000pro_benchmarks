@@ -89,8 +89,15 @@ try {
       "--volume-mount-path", "/workspace", "--ports", "22/tcp", "--ssh",
       "--env", $environment, "--min-cuda-version", "13.0"
     )
-    $createdText = (& $RunPodCtl @createArgs 2>&1 | Out-String).Trim()
-    $createExit = $LASTEXITCODE
+    $savedErrorPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+      $createdText = (& $RunPodCtl @createArgs 2>&1 | Out-String).Trim()
+      $createExit = $LASTEXITCODE
+    }
+    finally {
+      $ErrorActionPreference = $savedErrorPreference
+    }
     if ($createExit -eq 0) {
       $created = $createdText | ConvertFrom-Json
       break
