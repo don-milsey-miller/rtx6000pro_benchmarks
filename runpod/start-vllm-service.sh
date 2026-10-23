@@ -27,7 +27,7 @@ export PATH=$CUDA_HOME/bin:$PATH
 pid_file=$runtime_dir/$name.pid
 if [[ -s "$pid_file" ]] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
   echo "$name is already running" >&2
-  exit 1
+  exit 0
 fi
 
 nohup setsid "$workspace/venvs/vllm/bin/vllm" serve "$model" \
