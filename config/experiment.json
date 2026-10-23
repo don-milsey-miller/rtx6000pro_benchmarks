@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "forgebench-calibration-v1",
+  "budgetUsd": 100,
+  "budgetSafetyFraction": 0.10,
+  "gpuType": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+  "gpuCount": 3,
+  "cloudType": "COMMUNITY",
+  "runsPerCell": 1,
+  "parallelModels": 3,
+  "profile": "optimized",
+  "qualityGates": {
+    "serviceErrorRateMax": 0.01,
+    "toolErrorRateMax": 0.10,
+    "candidateTaskRegressionMax": 0,
+    "fullPassRequiredForOptimizationWinner": true
+  }
+}

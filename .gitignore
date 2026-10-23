@@ -1,0 +1,8 @@
+node_modules/
+artifacts/
+dist/
+.env
+*.log
+tasks/*/bundle/
+validation/tmp/
+

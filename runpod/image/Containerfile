@@ -1,0 +1,32 @@
+FROM registry.access.redhat.com/ubi10/ubi:10.2
+
+LABEL org.opencontainers.image.title="ForgeBench RHEL 10 runner"
+LABEL org.opencontainers.image.description="RHEL 10.2 UBI runtime for vLLM, Pi Coding Agent, and ForgeBench"
+
+RUN dnf -y update \
+    && dnf -y install \
+        bash bzip2 ca-certificates curl findutils gcc gcc-c++ git gzip hostname \
+        iproute jq lsof make nftables numactl openssh-clients openssh-server \
+        pciutils procps-ng python3.12 python3.12-devel python3.12-pip rsync \
+        shadow-utils tar time unzip util-linux which xz \
+    && dnf -y install dnf-plugins-core \
+    && dnf config-manager --add-repo \
+        https://developer.download.nvidia.com/compute/cuda/repos/rhel10/x86_64/cuda-rhel10.repo \
+    && dnf -y install \
+        cuda-cudart-devel-13-0 cuda-driver-devel-13-0 cuda-nvcc-13-0 \
+        cuda-nvrtc-devel-13-0 libcurand-devel-13-0 \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf \
+    && useradd --create-home --uid 1000 --shell /bin/bash bench
+
+COPY start-rhel10.sh /usr/local/bin/start-rhel10
+
+RUN chmod 0755 /usr/local/bin/start-rhel10 \
+    && mkdir -p /workspace /var/run/sshd /root/.ssh \
+    && chmod 0700 /root/.ssh
+
+WORKDIR /workspace
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=/usr/local/cuda/bin:${PATH}
+EXPOSE 22
+CMD ["/usr/local/bin/start-rhel10"]

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "models": [
+    {
+      "id": "qwen",
+      "provider": "vllm-qwen",
+      "model": "Qwen/Qwen3.8-27B",
+      "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "gpu": 0,
+      "endpoint": "http://127.0.0.1:8001/v1",
+      "metrics": "http://127.0.0.1:8001/metrics",
+      "contextWindow": 65536,
+      "thinking": "medium"
+    },
+    {
+      "id": "muse",
+      "provider": "vllm-muse",
+      "model": "meta-models/Muse-Glimmer-30B",
+      "revision": "cec94fcfd6512f2cfe708138c32533b346ea4f69",
+      "gpu": 1,
+      "endpoint": "http://127.0.0.1:8002/v1",
+      "metrics": "http://127.0.0.1:8002/metrics",
+      "contextWindow": 65536,
+      "thinking": "medium",
+      "systemPromptSuffix": "Reasoning strength: low"
+    },
+    {
+      "id": "gemma",
+      "provider": "vllm-gemma",
+      "model": "google/gemma-4-31B-it",
+      "revision": "842da3794eaa0b77d5f08bae87a17459d91ff475",
+      "gpu": 2,
+      "endpoint": "http://127.0.0.1:8003/v1",
+      "metrics": "http://127.0.0.1:8003/metrics",
+      "contextWindow": 65536,
+      "thinking": "medium"
+    }
+  ]
+}
+

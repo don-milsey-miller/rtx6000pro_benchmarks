@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "forgebench-v1",
+  "platform": "linux",
+  "runtime": "node>=24",
+  "seed": 6000,
+  "tasks": [
+    {
+      "id": "small-linkledger",
+      "scale": "small",
+      "product": "LinkLedger",
+      "weight": 1,
+      "deadlineSeconds": 1200,
+      "seedDirectory": "tasks/small-linkledger/seed",
+      "evaluator": "evaluators/small-linkledger.mjs"
+    },
+    {
+      "id": "medium-hookbin",
+      "scale": "medium",
+      "product": "HookBin",
+      "weight": 3,
+      "deadlineSeconds": 3600,
+      "seedDirectory": "tasks/medium-hookbin/seed",
+      "evaluator": "evaluators/medium-hookbin.mjs"
+    },
+    {
+      "id": "large-queuepilot",
+      "scale": "large",
+      "product": "QueuePilot",
+      "weight": 8,
+      "deadlineSeconds": 7200,
+      "seedDirectory": "tasks/large-queuepilot/seed",
+      "evaluator": "evaluators/large-queuepilot.mjs"
+    }
+  ]
+}
+
