@@ -34,9 +34,42 @@ function Invoke-GraphQL([string]$Query) {
   return $response.data
 }
 
-function Invoke-Ssh([string]$HostName, [int]$Port, [string]$Command) {
-  & ssh -i $SshKey -p $Port -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 "root@$HostName" $Command
-  if ($LASTEXITCODE -ne 0) { throw "remote command failed with exit code $LASTEXITCODE" }
+function Invoke-SshCapture([string]$HostName, [int]$Port, [string]$Command, [int]$TimeoutSeconds = 30) {
+  $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+  $startInfo.FileName = "ssh.exe"
+  $startInfo.UseShellExecute = $false
+  $startInfo.CreateNoWindow = $true
+  $startInfo.RedirectStandardOutput = $true
+  $startInfo.RedirectStandardError = $true
+  foreach ($argument in @(
+    "-i", $SshKey, "-p", "$Port", "-o", "BatchMode=yes",
+    "-o", "StrictHostKeyChecking=accept-new", "-o", "ConnectTimeout=15",
+    "root@$HostName", $Command
+  )) {
+    $startInfo.ArgumentList.Add($argument)
+  }
+  $process = [System.Diagnostics.Process]::new()
+  $process.StartInfo = $startInfo
+  if (!$process.Start()) { throw "failed to start ssh.exe" }
+  $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+  $stderrTask = $process.StandardError.ReadToEndAsync()
+  if (!$process.WaitForExit($TimeoutSeconds * 1000)) {
+    try { $process.Kill($true) } catch { $process.Kill() }
+    throw "remote command exceeded the $TimeoutSeconds-second SSH deadline"
+  }
+  return [pscustomobject]@{
+    ExitCode = $process.ExitCode
+    Stdout = $stdoutTask.GetAwaiter().GetResult().Trim()
+    Stderr = $stderrTask.GetAwaiter().GetResult().Trim()
+  }
+}
+
+function Invoke-Ssh([string]$HostName, [int]$Port, [string]$Command, [int]$TimeoutSeconds = 30) {
+  $result = Invoke-SshCapture $HostName $Port $Command $TimeoutSeconds
+  if ($result.Stdout) { Write-Host $result.Stdout }
+  if ($result.ExitCode -ne 0) {
+    throw "remote command failed with exit code $($result.ExitCode): $($result.Stderr)"
+  }
 }
 
 function Resolve-ImageDigest([string]$Reference) {
@@ -209,16 +242,29 @@ try {
   $remoteDigest = ConvertTo-ShellLiteral $imageDigest
   $remoteRepository = ConvertTo-ShellLiteral $Repository
   $remoteRevision = ConvertTo-ShellLiteral $Revision
-  Invoke-Ssh $hostName $sshPort "git clone --depth 1 --single-branch --branch $remoteRevision $remoteRepository /workspace/benchmark && chmod +x /workspace/benchmark/runpod/*.sh && setsid -f env BENCH_IMAGE_REFERENCE=$remoteImage BENCH_IMAGE_DIGEST=$remoteDigest bash /workspace/benchmark/runpod/execute.sh >/workspace/results/controller-execute.log 2>&1 </dev/null"
+  Invoke-Ssh $hostName $sshPort "git clone --depth 1 --single-branch --branch $remoteRevision $remoteRepository /workspace/benchmark && chmod +x /workspace/benchmark/runpod/*.sh && setsid -f env BENCH_IMAGE_REFERENCE=$remoteImage BENCH_IMAGE_DIGEST=$remoteDigest bash /workspace/benchmark/runpod/execute.sh >/workspace/results/controller-execute.log 2>&1 </dev/null" 120
   Write-Host "Remote benchmark started."
 
   $lastProgress = [datetime]::MinValue
   while ([datetime]::UtcNow -lt $deadline) {
-    $complete = & ssh -i $SshKey -p $sshPort -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 "root@$hostName" "test -s /workspace/results/completion.json && cat /workspace/results/completion.json" 2>$null
-    if ($LASTEXITCODE -eq 0 -and $complete) { Write-Host "Remote completion: $complete"; break }
+    try {
+      $completionPoll = Invoke-SshCapture $hostName $sshPort "test -s /workspace/results/completion.json && cat /workspace/results/completion.json" 25
+      if ($completionPoll.ExitCode -eq 0 -and $completionPoll.Stdout) {
+        Write-Host "Remote completion: $($completionPoll.Stdout)"
+        break
+      }
+    }
+    catch {
+      Write-Warning "Completion poll failed: $($_.Exception.Message)"
+    }
     if (([datetime]::UtcNow - $lastProgress).TotalMinutes -ge 5) {
-      $tail = & ssh -i $SshKey -p $sshPort -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 "root@$hostName" "tail -n 5 /workspace/results/execute.log 2>/dev/null || tail -n 5 /workspace/results/controller-execute.log 2>/dev/null || true" 2>$null
-      Write-Host "Progress $([datetime]::UtcNow.ToString('o'))`n$tail"
+      try {
+        $progressPoll = Invoke-SshCapture $hostName $sshPort "tail -n 5 /workspace/results/execute.log 2>/dev/null || tail -n 5 /workspace/results/controller-execute.log 2>/dev/null || true" 25
+        Write-Host "Progress $([datetime]::UtcNow.ToString('o'))`n$($progressPoll.Stdout)"
+      }
+      catch {
+        Write-Warning "Progress poll failed: $($_.Exception.Message)"
+      }
       $lastProgress = [datetime]::UtcNow
     }
     Start-Sleep -Seconds 30

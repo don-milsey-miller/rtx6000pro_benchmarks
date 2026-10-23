@@ -8,17 +8,38 @@ import { buildRunManifest } from "../src/manifest.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 test("builds a provenance manifest without inventing unavailable runtime values", async () => {
-  const configuration = await loadConfiguration(root);
-  const run = buildRunPlan(configuration)[0];
-  const manifest = await buildRunManifest({ root, run, runRoot: "synthetic-run", piPath: null, piArgs: ["--version"] });
-  assert.match(manifest.repository.commit, /^[0-9a-f]{40}$/);
-  assert.equal(manifest.repository.baselineCommit, "c76ecd8");
-  assert.equal(manifest.seed, 6000);
-  assert.equal(manifest.suiteId, configuration.suite.suiteId);
-  assert.match(manifest.provenance.taskSpecSha256, /^[0-9a-f]{64}$/);
-  assert.match(manifest.provenance.evaluatorSha256, /^[0-9a-f]{64}$/);
-  assert.equal(manifest.model.revision, configuration.models.models[0].revision);
-  assert.equal(manifest.host.imageDigest, null);
-  assert.equal(manifest.pi.version, null);
-  assert.equal(manifest.budgets.repairAttempts, null);
+  const priorDigest = process.env.BENCH_IMAGE_DIGEST;
+  delete process.env.BENCH_IMAGE_DIGEST;
+  try {
+    const configuration = await loadConfiguration(root);
+    const run = buildRunPlan(configuration)[0];
+    const manifest = await buildRunManifest({ root, run, runRoot: "synthetic-run", piPath: null, piArgs: ["--version"] });
+    assert.match(manifest.repository.commit, /^[0-9a-f]{40}$/);
+    assert.equal(manifest.repository.baselineCommit, "c76ecd8");
+    assert.equal(manifest.seed, 6000);
+    assert.equal(manifest.suiteId, configuration.suite.suiteId);
+    assert.match(manifest.provenance.taskSpecSha256, /^[0-9a-f]{64}$/);
+    assert.match(manifest.provenance.evaluatorSha256, /^[0-9a-f]{64}$/);
+    assert.equal(manifest.model.revision, configuration.models.models[0].revision);
+    assert.equal(manifest.host.imageDigest, null);
+    assert.equal(manifest.pi.version, null);
+    assert.equal(manifest.budgets.repairAttempts, null);
+  } finally {
+    if (priorDigest === undefined) delete process.env.BENCH_IMAGE_DIGEST;
+    else process.env.BENCH_IMAGE_DIGEST = priorDigest;
+  }
+});
+
+test("records an explicitly supplied image digest", async () => {
+  const priorDigest = process.env.BENCH_IMAGE_DIGEST;
+  process.env.BENCH_IMAGE_DIGEST = "sha256:" + "a".repeat(64);
+  try {
+    const configuration = await loadConfiguration(root);
+    const run = buildRunPlan(configuration)[0];
+    const manifest = await buildRunManifest({ root, run, runRoot: "synthetic-run", piPath: null });
+    assert.equal(manifest.host.imageDigest, process.env.BENCH_IMAGE_DIGEST);
+  } finally {
+    if (priorDigest === undefined) delete process.env.BENCH_IMAGE_DIGEST;
+    else process.env.BENCH_IMAGE_DIGEST = priorDigest;
+  }
 });
