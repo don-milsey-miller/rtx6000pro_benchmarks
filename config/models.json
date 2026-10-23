@@ -10,7 +10,8 @@
       "endpoint": "http://127.0.0.1:8001/v1",
       "metrics": "http://127.0.0.1:8001/metrics",
       "contextWindow": 65536,
-      "thinking": "medium"
+      "thinking": "off",
+      "systemPromptSuffix": "Implement early and iteratively. Do not spend a full response on planning."
     },
     {
       "id": "muse",

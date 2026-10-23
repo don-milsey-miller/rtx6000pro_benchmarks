@@ -5,24 +5,34 @@ import { parsePrometheus, summarizeVllmMetrics } from "../src/prometheus.mjs";
 const before = `
 vllm:prompt_tokens_total{model_name="demo"} 100
 vllm:generation_tokens_total{model_name="demo"} 50
-vllm:prefix_cache_queries{model_name="demo"} 20
-vllm:prefix_cache_hits{model_name="demo"} 5
+vllm:prefix_cache_queries_total{model_name="demo"} 20
+vllm:prefix_cache_hits_total{model_name="demo"} 5
 vllm:time_to_first_token_seconds_bucket{model_name="demo",le="0.1"} 1
 vllm:time_to_first_token_seconds_bucket{model_name="demo",le="0.5"} 2
 vllm:time_to_first_token_seconds_bucket{model_name="demo",le="+Inf"} 2
 vllm:time_to_first_token_seconds_sum{model_name="demo"} 0.4
 vllm:time_to_first_token_seconds_count{model_name="demo"} 2
+vllm:request_time_per_output_token_seconds_bucket{model_name="demo",le="0.01"} 1
+vllm:request_time_per_output_token_seconds_bucket{model_name="demo",le="0.02"} 2
+vllm:request_time_per_output_token_seconds_bucket{model_name="demo",le="+Inf"} 2
+vllm:request_time_per_output_token_seconds_sum{model_name="demo"} 0.03
+vllm:request_time_per_output_token_seconds_count{model_name="demo"} 2
 `;
 const after = `
 vllm:prompt_tokens_total{model_name="demo"} 250
 vllm:generation_tokens_total{model_name="demo"} 90
-vllm:prefix_cache_queries{model_name="demo"} 30
-vllm:prefix_cache_hits{model_name="demo"} 9
+vllm:prefix_cache_queries_total{model_name="demo"} 30
+vllm:prefix_cache_hits_total{model_name="demo"} 9
 vllm:time_to_first_token_seconds_bucket{model_name="demo",le="0.1"} 2
 vllm:time_to_first_token_seconds_bucket{model_name="demo",le="0.5"} 5
 vllm:time_to_first_token_seconds_bucket{model_name="demo",le="+Inf"} 5
 vllm:time_to_first_token_seconds_sum{model_name="demo"} 1.4
 vllm:time_to_first_token_seconds_count{model_name="demo"} 5
+vllm:request_time_per_output_token_seconds_bucket{model_name="demo",le="0.01"} 2
+vllm:request_time_per_output_token_seconds_bucket{model_name="demo",le="0.02"} 5
+vllm:request_time_per_output_token_seconds_bucket{model_name="demo",le="+Inf"} 5
+vllm:request_time_per_output_token_seconds_sum{model_name="demo"} 0.09
+vllm:request_time_per_output_token_seconds_count{model_name="demo"} 5
 `;
 
 test("parses Prometheus labels and values", () => {
@@ -41,6 +51,9 @@ test("computes counters, cache rate, histogram, and gauges", () => {
   assert.equal(summary.latencySeconds.ttft.count, 3);
   assert.equal(summary.latencySeconds.ttft.mean, 1 / 3);
   assert.equal(summary.latencySeconds.ttft.p95, 0.5);
+  assert.equal(summary.latencySeconds.tpot.count, 3);
+  assert.equal(summary.latencySeconds.tpot.mean, 0.02);
+  assert.equal(summary.latencySeconds.tpot.p95, 0.02);
   assert.equal(summary.kvCacheUsage.max, 0.8);
 });
 

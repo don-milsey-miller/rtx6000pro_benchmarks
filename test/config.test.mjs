@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { budgetRuntimeSeconds, buildRunPlan, validateExperiment, validateModels, validateSuite } from "../src/config.mjs";
+import { budgetRuntimeSeconds, buildRunPlan, filterRunPlan, validateExperiment, validateModels, validateSuite } from "../src/config.mjs";
 
 const suite = validateSuite({
   schemaVersion: 1, platform: "linux", tasks: [
@@ -24,6 +24,16 @@ test("builds complete rotated run plan", () => {
 
 test("calculates budget-safe runtime", () => {
   assert.equal(budgetRuntimeSeconds(experiment, 10), 32_400);
+});
+
+test("filters targeted research cells without changing run identity", () => {
+  const selected = filterRunPlan(buildRunPlan({ suite, models, experiment }), {
+    modelIds: ["a"],
+    taskIds: ["small-one"],
+  });
+  assert.equal(selected.length, 2);
+  assert.ok(selected.every((run) => run.model.id === "a" && run.task.id === "small-one"));
+  assert.throws(() => filterRunPlan(buildRunPlan({ suite, models, experiment }), { modelIds: ["missing"] }), /no benchmark cells/);
 });
 
 test("rejects non-loopback endpoints", () => {

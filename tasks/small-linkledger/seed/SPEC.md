@@ -9,9 +9,10 @@ page. It must start with `npm start`, bind to `HOST` (default `127.0.0.1`) and
 - `GET /health` → `200 {"status":"ok"}`.
 - `POST /api/bookmarks` accepts JSON with `url`, `title`, and optional `tags`.
   `url` must be an absolute `http:` or `https:` URL, `title` must be a non-empty
-  string of at most 200 characters, and `tags` must be an array of unique,
-  non-empty strings. Return `201` with a generated `id`, normalized fields, and
-  ISO-8601 `createdAt`.
+  string of at most 200 characters, and `tags` must be an array of non-empty
+  strings. Trim the title and each tag, then collapse duplicate normalized tags
+  while preserving their first occurrence. Return `201` with a generated `id`,
+  normalized fields, and ISO-8601 `createdAt`.
 - `GET /api/bookmarks` returns
   `{"items":[...],"nextCursor":string|null}` newest first. Support optional
   case-insensitive `q` search across title and URL, exact `tag`, `limit` from

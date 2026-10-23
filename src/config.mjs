@@ -88,6 +88,17 @@ export function buildRunPlan({ suite, models, experiment }) {
   return plan;
 }
 
+export function filterRunPlan(plan, { modelIds = [], taskIds = [] } = {}) {
+  const models = new Set(modelIds.filter(Boolean));
+  const tasks = new Set(taskIds.filter(Boolean));
+  const selected = plan.filter((run) =>
+    (!models.size || models.has(run.model.id)) &&
+    (!tasks.size || tasks.has(run.task.id))
+  );
+  if (!selected.length) throw new Error("run filters selected no benchmark cells");
+  return selected;
+}
+
 export function budgetRuntimeSeconds({ budgetUsd, budgetSafetyFraction }, hourlyRateUsd) {
   assert(Number.isFinite(hourlyRateUsd) && hourlyRateUsd > 0, "hourly rate must be positive");
   return Math.floor((budgetUsd * (1 - budgetSafetyFraction) / hourlyRateUsd) * 3600);

@@ -65,11 +65,26 @@ export function summarizeVllmMetrics(beforeText, afterText, sampleTexts = []) {
   const name = (candidates) => existingName(all, candidates);
   const promptName = name(["vllm:prompt_tokens_total", "vllm_prompt_tokens_total"]);
   const generationName = name(["vllm:generation_tokens_total", "vllm_generation_tokens_total"]);
-  const prefixQueries = name(["vllm:prefix_cache_queries", "vllm_prefix_cache_queries"]);
-  const prefixHits = name(["vllm:prefix_cache_hits", "vllm_prefix_cache_hits"]);
+  const prefixQueries = name([
+    "vllm:prefix_cache_queries_total",
+    "vllm_prefix_cache_queries_total",
+    "vllm:prefix_cache_queries",
+    "vllm_prefix_cache_queries",
+  ]);
+  const prefixHits = name([
+    "vllm:prefix_cache_hits_total",
+    "vllm_prefix_cache_hits_total",
+    "vllm:prefix_cache_hits",
+    "vllm_prefix_cache_hits",
+  ]);
   const preemptions = name(["vllm:num_preemptions_total", "vllm_num_preemptions_total"]);
   const ttft = name(["vllm:time_to_first_token_seconds", "vllm_time_to_first_token_seconds"]);
-  const tpot = name(["vllm:time_per_output_token_seconds", "vllm_time_per_output_token_seconds"]);
+  const tpot = name([
+    "vllm:request_time_per_output_token_seconds",
+    "vllm_request_time_per_output_token_seconds",
+    "vllm:time_per_output_token_seconds",
+    "vllm_time_per_output_token_seconds",
+  ]);
   const e2e = name(["vllm:e2e_request_latency_seconds", "vllm_e2e_request_latency_seconds"]);
   const requests = name(["vllm:request_success_total", "vllm_request_success_total"]);
   const failures = name(["vllm:request_failure_total", "vllm_request_failure_total"]);

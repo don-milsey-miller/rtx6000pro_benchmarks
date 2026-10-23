@@ -55,6 +55,7 @@ function defaultPrompt(task) {
   return [
     `Build the complete ${task.product} product described in SPEC.md.`,
     "Start by reading SPEC.md, AGENTS.md, and the visible tests.",
+    "Keep upfront planning short, begin implementation within the first two turns, and reserve output budget for tool calls and verification.",
     "Work autonomously through implementation and verification. You may add or improve tests, but the independent evaluator is external.",
     "Run the application and exercise important behavior end to end; do not finish merely because files were created.",
     "Finish only when the product is working and npm test passes, or report a concrete blocker after exhausting reasonable fixes.",

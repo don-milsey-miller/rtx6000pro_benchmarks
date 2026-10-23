@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildRunPlan, loadConfiguration } from "../src/config.mjs";
+import { buildRunPlan, filterRunPlan, loadConfiguration } from "../src/config.mjs";
 import { writeJson } from "../src/fs.mjs";
 import { writeReport } from "../src/report.mjs";
 import { runAttempt } from "../src/runner.mjs";
@@ -10,7 +10,11 @@ import { scoreSuite } from "../src/score.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const artifactsRoot = resolve(process.env.BENCH_ARTIFACTS ?? root, process.env.BENCH_ARTIFACTS ? "" : "artifacts");
 const configuration = await loadConfiguration(root);
-const plan = buildRunPlan(configuration);
+const ids = (name) => String(process.env[name] ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+const plan = filterRunPlan(buildRunPlan(configuration), {
+  modelIds: ids("BENCH_MODEL_IDS"),
+  taskIds: ids("BENCH_TASK_IDS"),
+});
 await mkdir(resolve(artifactsRoot, "runs"), { recursive: true });
 const piPath = process.env.PI_PATH ?? "/workspace/pi/node_modules/.bin/pi";
 const results = [];
@@ -29,6 +33,10 @@ const metadata = {
   generatedAt: new Date().toISOString(),
   profile: configuration.experiment.profile,
   billedUsd: Number(process.env.BENCH_BILLED_USD ?? 0),
+  runFilters: {
+    modelIds: ids("BENCH_MODEL_IDS"),
+    taskIds: ids("BENCH_TASK_IDS"),
+  },
 };
 await writeJson(resolve(artifactsRoot, "results.json"), { schemaVersion: 1, metadata, summary: scoreSuite(results, metadata.billedUsd), results });
 await writeReport(resolve(artifactsRoot, "report.html"), { results, metadata });
