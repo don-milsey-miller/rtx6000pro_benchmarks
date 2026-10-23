@@ -80,6 +80,7 @@ export function buildPiArgs({ task, model, sessionDirectory, runId }) {
     "--session-dir", sessionDirectory,
     "--session-id", runId,
     "--approve",
+    "--extension", process.env.BENCH_PI_EXTENSION ?? "/workspace/benchmark/runpod/extensions/bash-timeout.mjs",
     "--tools", "read,bash,edit,write,grep,find,ls",
   ];
   if (model.systemPromptSuffix) args.push("--append-system-prompt", model.systemPromptSuffix);
