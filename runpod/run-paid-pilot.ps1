@@ -25,7 +25,9 @@ function Invoke-GraphQL([string]$Query) {
   $headers = @{ Authorization = "Bearer $env:RUNPOD_API_KEY" }
   $body = @{ query = $Query } | ConvertTo-Json -Compress
   $response = Invoke-RestMethod -Uri "https://api.runpod.io/graphql" -Method Post -Headers $headers -ContentType "application/json" -Body $body
-  if ($response.errors) { throw ($response.errors | ConvertTo-Json -Depth 8) }
+  if (($response.PSObject.Properties.Name -contains "errors") -and $response.errors) {
+    throw ($response.errors | ConvertTo-Json -Depth 8)
+  }
   return $response.data
 }
 
