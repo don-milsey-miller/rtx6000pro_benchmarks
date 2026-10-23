@@ -46,7 +46,7 @@ function Resolve-ImageDigest([string]$Reference) {
   }
   $uri = "https://$($Matches.registry)/v2/$($Matches.repository)/manifests/$($Matches.tag)"
   $accept = "application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json"
-  $response = Invoke-WebRequest -Uri $uri -Method Head -Headers @{ Accept = $accept }
+  $response = Invoke-WebRequest -Uri $uri -Method Head -Headers @{ Accept = $accept } -TimeoutSec 30 -UseBasicParsing
   $digest = [string]$response.Headers["Docker-Content-Digest"]
   if ($digest -notmatch '^sha256:[0-9a-fA-F]{64}$') { throw "registry did not return a content digest for $Reference" }
   return $digest.ToLowerInvariant()
