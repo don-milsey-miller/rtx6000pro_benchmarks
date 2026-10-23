@@ -13,7 +13,8 @@
     "dry-run": "node scripts/dry-run.mjs",
     "check": "npm test && npm run validate && npm run build:bundles && npm run dry-run",
     "report": "node scripts/generate-report.mjs",
-    "aggregate": "node scripts/aggregate-runs.mjs"
+    "aggregate": "node scripts/aggregate-runs.mjs",
+    "research-report": "node scripts/generate-research-report.mjs"
   }
 }
 

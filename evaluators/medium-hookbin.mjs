@@ -101,7 +101,12 @@ await runChecks([
     const response = await app.request("/");
     const html = await response.text();
     assert.equal(response.status, 200);
-    assert.match(html, /<form/i);
+    // The contract requires an interface where an owner can enter a key and
+    // secret, not a particular HTML container element. Requiring a literal
+    // <form> rejected equivalent button-driven interfaces and made the hidden
+    // evaluator stricter than the published specification.
+    assert.ok((html.match(/<input\b/gi) ?? []).length >= 2);
+    assert.match(html, /<button\b|type=["']submit["']/i);
     assert.match(html, /event/i);
     assert.doesNotMatch(html, new RegExp(inbox.secret));
   }],
