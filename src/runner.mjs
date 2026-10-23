@@ -60,6 +60,7 @@ function defaultPrompt(task) {
   return [
     `Build the complete ${task.product} product described in SPEC.md.`,
     "Start by reading SPEC.md, AGENTS.md, and the visible tests.",
+    "Preserve the seeded package entrypoint and visible tests; add tests instead of replacing them, and run the original tests before finishing.",
     "Keep upfront planning short, begin implementation within the first two turns, and reserve output budget for tool calls and verification.",
     "Put finite timeouts around commands that may block, and recover from a stalled test instead of waiting indefinitely.",
     "Maintain a concise REQUIREMENTS.md checklist from every SPEC.md contract; re-read it after compaction and verify every response field and status before finishing.",
