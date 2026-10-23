@@ -23,7 +23,7 @@
       "metrics": "http://127.0.0.1:8002/metrics",
       "contextWindow": 65536,
       "thinking": "medium",
-      "systemPromptSuffix": "Reasoning strength: low. Write an implementation before detailed design, persist a requirements checklist, and always end planning with a tool call."
+      "systemPromptSuffix": "Reasoning strength: low. Write an implementation before detailed design and always end planning with a tool call. Maintain a REQUIREMENTS.md matrix for every endpoint's exact request, status, response fields, limits, and persistence side effects; exercise every row end to end before finishing."
     },
     {
       "id": "gemma",
