@@ -11,7 +11,7 @@
       "metrics": "http://127.0.0.1:8001/metrics",
       "contextWindow": 65536,
       "thinking": "off",
-      "systemPromptSuffix": "Implement early and iteratively. Do not spend a full response on planning."
+      "systemPromptSuffix": "Implement early and iteratively. Do not spend a full response on planning. Persist exact API response-shape requirements in REQUIREMENTS.md and audit them before finishing."
     },
     {
       "id": "muse",
@@ -23,7 +23,7 @@
       "metrics": "http://127.0.0.1:8002/metrics",
       "contextWindow": 65536,
       "thinking": "medium",
-      "systemPromptSuffix": "Reasoning strength: low"
+      "systemPromptSuffix": "Reasoning strength: low. Write an implementation before detailed design, persist a requirements checklist, and always end planning with a tool call."
     },
     {
       "id": "gemma",

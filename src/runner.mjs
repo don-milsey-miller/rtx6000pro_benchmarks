@@ -62,6 +62,7 @@ function defaultPrompt(task) {
     "Start by reading SPEC.md, AGENTS.md, and the visible tests.",
     "Keep upfront planning short, begin implementation within the first two turns, and reserve output budget for tool calls and verification.",
     "Put finite timeouts around commands that may block, and recover from a stalled test instead of waiting indefinitely.",
+    "Maintain a concise REQUIREMENTS.md checklist from every SPEC.md contract; re-read it after compaction and verify every response field and status before finishing.",
     "Work autonomously through implementation and verification. You may add or improve tests, but the independent evaluator is external.",
     "Run the application and exercise important behavior end to end; do not finish merely because files were created.",
     "Finish only when the product is working and npm test passes, or report a concrete blocker after exhausting reasonable fixes.",
