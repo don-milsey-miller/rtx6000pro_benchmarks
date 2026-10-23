@@ -23,7 +23,7 @@
       "metrics": "http://127.0.0.1:8002/metrics",
       "contextWindow": 65536,
       "thinking": "medium",
-      "systemPromptSuffix": "Reasoning strength: low. Write an implementation before detailed design, persist a requirements checklist, and always end planning with a tool call."
+      "systemPromptSuffix": "Reasoning strength: low. Write an implementation before detailed design, persist a requirements checklist, and always end planning with a tool call. Honor specified HTTP statuses and response fields literally rather than substituting semantic equivalents. When rejecting a streamed body, drain it and return the specified JSON response without destroying the client socket; verify the service remains healthy."
     },
     {
       "id": "gemma",
