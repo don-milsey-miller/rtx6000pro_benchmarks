@@ -15,7 +15,7 @@ await runChecks([
   ["service starts and reports health", async () => {
     await app.start();
     assert.deepEqual((await app.json("/health")).body, { status: "ok" });
-  }],
+  }, { phase: "setup", timeoutCode: "setup_timeout" }],
   ["rejects absent and invalid bearer tokens", async () => {
     assert.equal((await app.request("/api/projects")).status, 401);
     assert.equal((await app.request("/api/projects", { headers: headers("wrong") })).status, 401);
@@ -121,7 +121,7 @@ await runChecks([
     await readUntil(/project\.created/);
     controller.abort();
     try { await reader.cancel(); } catch {}
-  }],
+  }, { phase: "request", timeoutCode: "sse_timeout" }],
   ["handles concurrent tenant writes", async () => {
     const responses = await Promise.all(Array.from({ length: 10 }, (_, index) => app.json(`/api/projects/${project.id}/issues`, json("POST", { title: `Concurrent ${index}` }, tenants.alpha, { "idempotency-key": `concurrent-${index}` }))));
     assert.ok(responses.every(({ response }) => response.status === 201));
@@ -160,5 +160,5 @@ await runChecks([
     await app.stop();
     assert.ok(app.child.exitCode !== null || app.child.signalCode !== null);
   }],
-], { cleanup: () => app.cleanup() });
+], { cleanup: () => app.cleanup(), diagnostics: () => app.diagnostics() });
 

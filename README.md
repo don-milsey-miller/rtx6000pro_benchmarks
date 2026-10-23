@@ -54,6 +54,10 @@ The paid entry point is `runpod/run-paid-pilot.ps1`; it checks live three-GPU
 availability/pricing through the RunPod API and installs a separate hard-budget
 watchdog before remote setup begins.
 
+The current implementation choices, frozen baseline tag, artifact checksum,
+RunPod availability observation, and unresolved stage gates are recorded in
+[`docs/IMPLEMENTATION-DECISIONS.md`](docs/IMPLEMENTATION-DECISIONS.md).
+
 ## Completed RHEL 10 optimization study
 
 The paid 3× RTX PRO 6000 Blackwell study, including its measured outcomes,

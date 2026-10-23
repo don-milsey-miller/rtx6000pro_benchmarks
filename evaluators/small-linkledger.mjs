@@ -12,7 +12,7 @@ await runChecks([
     const { response, body } = await app.json("/health");
     assert.equal(response.status, 200);
     assert.deepEqual(body, { status: "ok" });
-  }],
+  }, { phase: "setup", timeoutCode: "setup_timeout" }],
   ["creates normalized bookmark", async () => {
     const { response, body } = await app.json("/api/bookmarks", jsonOptions("POST", {
       url: "https://example.com/a", title: "  Alpha docs  ", tags: ["docs", "api", "docs"],
@@ -86,5 +86,5 @@ await runChecks([
     await app.stop();
     assert.ok(app.child.exitCode !== null || app.child.signalCode !== null);
   }],
-], { cleanup: () => app.cleanup() });
+], { cleanup: () => app.cleanup(), diagnostics: () => app.diagnostics() });
 

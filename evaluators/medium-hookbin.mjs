@@ -15,7 +15,7 @@ await runChecks([
   ["service starts and reports health", async () => {
     await app.start();
     assert.deepEqual((await app.json("/health")).body, { status: "ok" });
-  }],
+  }, { phase: "setup", timeoutCode: "setup_timeout" }],
   ["creates inbox with unguessable credentials", async () => {
     const first = await app.json("/api/inboxes", jsonOptions("POST", { name: "Deploy hooks" }));
     const other = await app.json("/api/inboxes", jsonOptions("POST", { name: "Other" }));
@@ -124,5 +124,5 @@ await runChecks([
     const list = await app.json(`/api/inboxes/${inbox.key}/events`, { headers: owner() });
     assert.equal(list.body.items.length, 0);
   }],
-], { cleanup: () => app.cleanup() });
+], { cleanup: () => app.cleanup(), diagnostics: () => app.diagnostics() });
 

@@ -4,6 +4,7 @@
   "platform": "linux",
   "runtime": "node>=24",
   "seed": 6000,
+  "seeds": [6000, 6001, 6002],
   "tasks": [
     {
       "id": "small-linkledger",
@@ -11,6 +12,11 @@
       "product": "LinkLedger",
       "weight": 1,
       "deadlineSeconds": 1200,
+      "evaluation": {
+        "checkDeadlineSeconds": 15,
+        "cleanupDeadlineSeconds": 10,
+        "outerDeadlineSeconds": 180
+      },
       "seedDirectory": "tasks/small-linkledger/seed",
       "evaluator": "evaluators/small-linkledger.mjs"
     },
@@ -20,6 +26,11 @@
       "product": "HookBin",
       "weight": 3,
       "deadlineSeconds": 3600,
+      "evaluation": {
+        "checkDeadlineSeconds": 20,
+        "cleanupDeadlineSeconds": 10,
+        "outerDeadlineSeconds": 240
+      },
       "seedDirectory": "tasks/medium-hookbin/seed",
       "evaluator": "evaluators/medium-hookbin.mjs"
     },
@@ -29,6 +40,11 @@
       "product": "QueuePilot",
       "weight": 8,
       "deadlineSeconds": 7200,
+      "evaluation": {
+        "checkDeadlineSeconds": 30,
+        "cleanupDeadlineSeconds": 15,
+        "outerDeadlineSeconds": 420
+      },
       "seedDirectory": "tasks/large-queuepilot/seed",
       "evaluator": "evaluators/large-queuepilot.mjs"
     }

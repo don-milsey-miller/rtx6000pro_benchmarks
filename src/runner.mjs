@@ -2,8 +2,10 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { copyTree, treeManifest, writeJson } from "./fs.mjs";
 import { summarizePiEvents } from "./pi-events.mjs";
+import { buildRunManifest } from "./manifest.mjs";
 import { runBounded } from "./process.mjs";
 import { summarizeVllmMetrics } from "./prometheus.mjs";
+import { redactText } from "./redact.mjs";
 import { fetchText, summarizeGpu, summarizeHost, TelemetrySampler } from "./telemetry.mjs";
 
 const now = () => new Date().toISOString();
@@ -137,9 +139,11 @@ export async function runAttempt({
     : agentUser
       ? ["--user", agentUser, "--", "env", "PI_OFFLINE=1", "VLLM_API_KEY=local-vllm", piPath, ...piArgs]
       : piArgs;
+  const runManifest = await buildRunManifest({ root, run, runRoot, piPath: agentCommand ? null : piPath, piArgs });
+  await writeJson(resolve(runRoot, "run-manifest.json"), runManifest);
   const agent = await runBounded(command, args, {
     cwd: workspace,
-    env: { ...process.env, PI_OFFLINE: "1", VLLM_API_KEY: "local-vllm", ...agentEnv },
+    env: { ...process.env, PI_OFFLINE: "1", VLLM_API_KEY: "local-vllm", BENCH_SEED: String(run.seed), ...agentEnv },
     timeoutMs: run.task.deadlineSeconds * 1000,
     maxOutputBytes: 250 * 1024 * 1024,
   });
@@ -163,39 +167,94 @@ export async function runAttempt({
   pi.contextWindowUtilization = run.model.contextWindow ? pi.peakContextTokens / run.model.contextWindow : null;
 
   const gradePath = resolve(runRoot, "grade.json");
+  const gradeEventsPath = resolve(runRoot, "evaluator-events.jsonl");
+  const evaluatorDiagnosticPath = resolve(runRoot, "evaluator-timeout-diagnostic.json");
+  const evaluation = run.task.evaluation;
   const evaluator = await runBounded(process.execPath, [resolve(root, run.task.evaluator)], {
     cwd: root,
-    env: { ...process.env, BENCH_WORKSPACE: workspace, GRADE_RESULT_PATH: gradePath },
-    timeoutMs: 180_000,
+    env: {
+      ...process.env,
+      BENCH_WORKSPACE: workspace,
+      BENCH_RUN_ID: run.runId,
+      BENCH_CANDIDATE_ID: process.env.BENCH_CANDIDATE_ID ?? "",
+      BENCH_TASK_ID: run.task.id,
+      BENCH_SEED: String(run.seed ?? ""),
+      BENCH_MODEL_ID: run.model.id,
+      BENCH_CHECK_DEADLINE_MS: String(evaluation.checkDeadlineSeconds * 1000),
+      BENCH_CLEANUP_DEADLINE_MS: String(evaluation.cleanupDeadlineSeconds * 1000),
+      BENCH_EVALUATOR_DEADLINE_MS: String(evaluation.outerDeadlineSeconds * 1000),
+      GRADE_RESULT_PATH: gradePath,
+      GRADE_EVENTS_PATH: gradeEventsPath,
+    },
+    timeoutMs: evaluation.outerDeadlineSeconds * 1000 + 5_000,
     maxOutputBytes: 20 * 1024 * 1024,
+    captureTimeoutDiagnostics: true,
   });
-  await writeFile(resolve(runRoot, "evaluator.stdout.log"), evaluator.stdout, "utf8");
-  await writeFile(resolve(runRoot, "evaluator.stderr.log"), evaluator.stderr, "utf8");
-  let grade = { passed: 0, total: 0, checks: [], error: "evaluator did not emit a result" };
+  await writeFile(resolve(runRoot, "evaluator.stdout.log"), redactText(evaluator.stdout, 20 * 1024 * 1024), "utf8");
+  await writeFile(resolve(runRoot, "evaluator.stderr.log"), redactText(evaluator.stderr, 20 * 1024 * 1024), "utf8");
+  if (evaluator.timeoutDiagnostics) await writeJson(evaluatorDiagnosticPath, evaluator.timeoutDiagnostics);
+  let grade = {
+    schemaVersion: 2,
+    evaluationStatus: "unverified",
+    failureOrigin: "unknown",
+    finalized: false,
+    passed: 0,
+    total: 0,
+    checks: [],
+    error: "evaluator did not emit a result",
+  };
   try { grade = JSON.parse(await readFile(gradePath, "utf8")); }
-  catch { if (evaluator.stderr) grade.error = evaluator.stderr.slice(-4_000); }
+  catch { if (evaluator.stderr) grade.error = redactText(evaluator.stderr.slice(-4_000), 4_000); }
 
   let classification = grade.total > 0 && grade.passed === grade.total ? "passed" : "failed_acceptance";
+  let outcome = grade.evaluationStatus ?? (classification === "passed" ? "pass" : "partial");
+  let failureOrigin = grade.failureOrigin ?? (classification === "passed" ? null : "unknown");
+  let failureCode = grade.failureCode ?? null;
   if (agent.timedOut) classification = "timeout";
   else if (agent.code !== 0 || !pi.protocolValid) classification = "agent_error";
-  if (evaluator.timedOut || (evaluator.code !== 0 && grade.total === 0)) classification = "infrastructure_error";
+  if (agent.timedOut) {
+    outcome = "timeout";
+    failureOrigin = "agent_controller";
+    failureCode = "agent_deadline_exceeded";
+  } else if (agent.code !== 0 || !pi.protocolValid) {
+    outcome = "aborted";
+    failureOrigin = "agent_controller";
+    failureCode = !pi.protocolValid ? "invalid_agent_protocol" : "agent_nonzero_exit";
+  }
+  if (evaluator.timedOut || (evaluator.code !== 0 && (!grade.finalized || grade.total === 0))) {
+    classification = "infrastructure_error";
+    outcome = "unverified";
+    failureOrigin = evaluator.timedOut ? "unknown" : (grade.failureOrigin ?? "evaluator");
+    failureCode = evaluator.timedOut ? "evaluator_outer_timeout" : "evaluator_incomplete";
+  }
 
   const vllm = summarizeVllmMetrics(metricsBefore, metricsAfter, sampler.metrics.map((sample) => sample.text));
   const result = {
-    schemaVersion: 1,
-    suiteId: "forgebench-v1",
+    schemaVersion: 2,
+    suiteId: run.suiteId,
     runId: run.runId,
     classification,
+    outcome,
+    failureOrigin,
+    failureCode,
     startedAt,
     finishedAt: now(),
     wallSeconds: Number(((Date.now() - started) / 1000).toFixed(3)),
-    task: { id: run.task.id, scale: run.task.scale, product: run.task.product, weight: run.task.weight, deadlineSeconds: run.task.deadlineSeconds },
-    model: { id: run.model.id, provider: run.model.provider, model: run.model.model, gpu: run.model.gpu, thinking: run.model.thinking, contextWindow: run.model.contextWindow },
+    task: { id: run.task.id, scale: run.task.scale, product: run.task.product, weight: run.task.weight, deadlineSeconds: run.task.deadlineSeconds, evaluation: run.task.evaluation },
+    model: { id: run.model.id, provider: run.model.provider, model: run.model.model, revision: run.model.revision ?? null, gpu: run.model.gpu, thinking: run.model.thinking, contextWindow: run.model.contextWindow },
     agent: { exitCode: agent.code, signal: agent.signal, timedOut: agent.timedOut, outputTruncated: agent.truncated, ...pi },
     grade,
     changes: { changedFiles: evidence.changedFiles, lineStats: evidence.lineStats, baselineFiles: baselineManifest.length, finalFiles: finalManifest.length },
     telemetry: { vllm, gpu: summarizeGpu(sampler.gpu, run.model.gpu), host: summarizeHost(sampler.host), samplerErrors: sampler.errors },
-    evaluator: { file: basename(run.task.evaluator), exitCode: evaluator.code, timedOut: evaluator.timedOut },
+    evaluator: {
+      file: basename(run.task.evaluator),
+      exitCode: evaluator.code,
+      signal: evaluator.signal,
+      timedOut: evaluator.timedOut,
+      outputTruncated: evaluator.truncated,
+      eventsFile: basename(gradeEventsPath),
+      timeoutDiagnosticFile: evaluator.timeoutDiagnostics ? basename(evaluatorDiagnosticPath) : null,
+    },
   };
   await writeJson(resolve(runRoot, "result.json"), result);
   return result;

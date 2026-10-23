@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [double]$BudgetUsd = 100.00,
+  [double]$BudgetUsd = 70.00,
   [double]$PriorSpendUsd = 0.00,
   [double]$SafetyFraction = 0.10,
   [string]$Image = "ttl.sh/forgebench-rhel10-01a1613354a177e386dfe5e80dd21601:24h",
@@ -8,8 +8,10 @@ param(
   [int]$GpuCount = 3,
   [int]$ContainerDiskGb = 60,
   [int]$VolumeGb = 350,
+  [int]$CapacityWaitMinutes = 360,
   [string]$SshKey = "$env:USERPROFILE\.ssh\runpod_ed25519",
   [string]$Repository = "https://github.com/don-milsey-miller/rtx6000pro_benchmarks.git",
+  [string]$Revision = "main",
   [string]$RunPodCtl = "$env:LOCALAPPDATA\RunPod\runpodctl.exe"
 )
 
@@ -37,22 +39,52 @@ function Invoke-Ssh([string]$HostName, [int]$Port, [string]$Command) {
   if ($LASTEXITCODE -ne 0) { throw "remote command failed with exit code $LASTEXITCODE" }
 }
 
+function Resolve-ImageDigest([string]$Reference) {
+  if ($Reference -match '@(?<digest>sha256:[0-9a-fA-F]{64})$') { return $Matches.digest.ToLowerInvariant() }
+  if ($Reference -notmatch '^(?<registry>[^/]+)/(?<repository>.+):(?<tag>[^/:]+)$') {
+    throw "image reference must include an explicit registry and tag: $Reference"
+  }
+  $uri = "https://$($Matches.registry)/v2/$($Matches.repository)/manifests/$($Matches.tag)"
+  $accept = "application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json"
+  $response = Invoke-WebRequest -Uri $uri -Method Head -Headers @{ Accept = $accept }
+  $digest = [string]$response.Headers["Docker-Content-Digest"]
+  if ($digest -notmatch '^sha256:[0-9a-fA-F]{64}$') { throw "registry did not return a content digest for $Reference" }
+  return $digest.ToLowerInvariant()
+}
+
+function ConvertTo-ShellLiteral([string]$Value) {
+  return "'" + $Value.Replace("'", "'`"'`"'") + "'"
+}
+
 if (!(Test-Path -LiteralPath $RunPodCtl)) { throw "runpodctl not found at $RunPodCtl" }
 if (!(Test-Path -LiteralPath $SshKey)) { throw "SSH key not found at $SshKey" }
 if (!(Test-Path -LiteralPath "$SshKey.pub")) { throw "SSH public key not found at $SshKey.pub" }
-if ($BudgetUsd -le 0 -or $SafetyFraction -lt 0.05 -or $SafetyFraction -ge 0.5) { throw "unsafe budget settings" }
+if ($BudgetUsd -le 0 -or $BudgetUsd -gt 70 -or $SafetyFraction -lt 0.05 -or $SafetyFraction -ge 0.5) { throw "unsafe budget settings" }
+if ($CapacityWaitMinutes -lt 1 -or $CapacityWaitMinutes -gt 360) { throw "capacity wait must be between 1 and 360 minutes" }
 
 Push-Location $root
 try {
   npm run check
   if ($LASTEXITCODE -ne 0) { throw "local benchmark validation failed" }
 
+  $imageDigest = Resolve-ImageDigest $Image
+
   $escapedGpu = $GpuType.Replace('"', '\"')
-  $availability = Invoke-GraphQL "query { gpuTypes(input: { id: `"$escapedGpu`" }) { id displayName memoryInGb secureCloud communityCloud lowestPrice(input: { gpuCount: $GpuCount }) { uninterruptablePrice minimumBidPrice } } }"
-  $gpu = @($availability.gpuTypes) | Select-Object -First 1
-  if (!$gpu -or (!$gpu.communityCloud -and !$gpu.secureCloud)) { throw "$GpuType is unavailable" }
-  $hourlyRate = [double]$gpu.lowestPrice.uninterruptablePrice
-  if ($hourlyRate -le 0) { throw "RunPod returned no on-demand price for $GpuCount GPUs" }
+  $capacityDeadline = [datetime]::UtcNow.AddMinutes($CapacityWaitMinutes)
+  $lastCapacityMessage = [datetime]::MinValue
+  do {
+    $availability = Invoke-GraphQL "query { gpuTypes(input: { id: `"$escapedGpu`" }) { id displayName memoryInGb secureCloud communityCloud lowestPrice(input: { gpuCount: $GpuCount }) { uninterruptablePrice minimumBidPrice } } }"
+    $gpu = @($availability.gpuTypes) | Select-Object -First 1
+    if (!$gpu -or (!$gpu.communityCloud -and !$gpu.secureCloud)) { throw "$GpuType is not offered by RunPod" }
+    $hourlyRate = [double]$gpu.lowestPrice.uninterruptablePrice
+    if ($hourlyRate -gt 0) { break }
+    if (([datetime]::UtcNow - $lastCapacityMessage).TotalMinutes -ge 5) {
+      Write-Host "Waiting for an on-demand $GpuCount x $GpuType placement; no live price is currently available."
+      $lastCapacityMessage = [datetime]::UtcNow
+    }
+    Start-Sleep -Seconds 30
+  } while ([datetime]::UtcNow -lt $capacityDeadline)
+  if ($hourlyRate -le 0) { throw "No priced on-demand $GpuCount-GPU placement became available within $CapacityWaitMinutes minutes" }
   $maxRuntimeSeconds = [math]::Floor(($BudgetUsd * (1 - $SafetyFraction) / $hourlyRate) * 3600)
   if ($maxRuntimeSeconds -lt 3600) { throw "approved budget leaves less than one hour after the safety reserve" }
 
@@ -70,6 +102,9 @@ try {
     safetyFraction = $SafetyFraction
     maximumRuntimeSeconds = $maxRuntimeSeconds
     image = $Image
+    imageDigest = $imageDigest
+    repository = $Repository
+    revision = $Revision
   }
   $state | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $localRun "provision-request.json")
 
@@ -168,7 +203,11 @@ try {
   $hostName = [string]$sshInfo.ip
   $sshPort = [int]$sshInfo.port
 
-  Invoke-Ssh $hostName $sshPort "git clone --depth 1 $Repository /workspace/benchmark && chmod +x /workspace/benchmark/runpod/*.sh && setsid -f bash /workspace/benchmark/runpod/execute.sh >/workspace/results/controller-execute.log 2>&1 </dev/null"
+  $remoteImage = ConvertTo-ShellLiteral $Image
+  $remoteDigest = ConvertTo-ShellLiteral $imageDigest
+  $remoteRepository = ConvertTo-ShellLiteral $Repository
+  $remoteRevision = ConvertTo-ShellLiteral $Revision
+  Invoke-Ssh $hostName $sshPort "git clone --depth 1 --single-branch --branch $remoteRevision $remoteRepository /workspace/benchmark && chmod +x /workspace/benchmark/runpod/*.sh && setsid -f env BENCH_IMAGE_REFERENCE=$remoteImage BENCH_IMAGE_DIGEST=$remoteDigest bash /workspace/benchmark/runpod/execute.sh >/workspace/results/controller-execute.log 2>&1 </dev/null"
   Write-Host "Remote benchmark started."
 
   $lastProgress = [datetime]::MinValue

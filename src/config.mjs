@@ -12,6 +12,11 @@ function assert(condition, message) {
 export function validateSuite(suite) {
   assert(suite?.schemaVersion === 1, "suite schemaVersion must be 1");
   assert(suite.platform === "linux", "suite must target Linux");
+  assert(Number.isInteger(suite.seed), "suite seed must be an integer");
+  assert(Array.isArray(suite.seeds) && suite.seeds.length > 0, "suite seeds must be a non-empty list");
+  assert(suite.seeds.every(Number.isInteger), "suite seeds must be integers");
+  assert(new Set(suite.seeds).size === suite.seeds.length, "suite seeds must be unique");
+  assert(suite.seeds[0] === suite.seed, "suite seed must remain the first comparison seed");
   assert(Array.isArray(suite.tasks) && suite.tasks.length >= 3, "suite requires at least three tasks");
   const ids = new Set();
   const scales = new Set();
@@ -21,6 +26,18 @@ export function validateSuite(suite) {
     ids.add(task.id);
     scales.add(task.scale);
     assert(Number.isInteger(task.deadlineSeconds) && task.deadlineSeconds > 0, `${task.id} has invalid deadline`);
+    assert(task.evaluation && typeof task.evaluation === "object", `${task.id} is missing evaluation deadlines`);
+    for (const field of ["checkDeadlineSeconds", "cleanupDeadlineSeconds", "outerDeadlineSeconds"]) {
+      assert(Number.isInteger(task.evaluation[field]) && task.evaluation[field] > 0, `${task.id} has invalid evaluation.${field}`);
+    }
+    assert(
+      task.evaluation.outerDeadlineSeconds > task.evaluation.cleanupDeadlineSeconds,
+      `${task.id} evaluator outer deadline must reserve time for cleanup`,
+    );
+    assert(
+      task.evaluation.checkDeadlineSeconds <= task.evaluation.outerDeadlineSeconds - task.evaluation.cleanupDeadlineSeconds,
+      `${task.id} check deadline exceeds the evaluator execution window`,
+    );
     assert(Number.isFinite(task.weight) && task.weight > 0, `${task.id} has invalid weight`);
     assert(task.seedDirectory && task.evaluator, `${task.id} is missing paths`);
   }
@@ -53,6 +70,9 @@ export function validateExperiment(experiment) {
   assert(experiment.budgetSafetyFraction >= 0.05 && experiment.budgetSafetyFraction < 0.5, "budget safety fraction is unsafe");
   assert(Number.isInteger(experiment.gpuCount) && experiment.gpuCount > 0, "gpuCount must be positive");
   assert(Number.isInteger(experiment.runsPerCell) && experiment.runsPerCell > 0, "runsPerCell must be positive");
+  assert(experiment.repairPolicy?.maxAttempts === 3, "repairPolicy.maxAttempts must be 3 for this campaign");
+  assert(experiment.repairPolicy.tokenLimit === null, "repair token usage must be report-only");
+  assert(experiment.promotionGates?.runpodCampaignSpendMaxUsd === experiment.budgetUsd, "promotion spend gate must match budgetUsd");
   return experiment;
 }
 
@@ -70,6 +90,7 @@ export async function loadConfiguration(root) {
 }
 
 export function buildRunPlan({ suite, models, experiment }) {
+  assert(experiment.runsPerCell <= suite.seeds.length, "runsPerCell exceeds the immutable seed set");
   const plan = [];
   for (let repetition = 1; repetition <= experiment.runsPerCell; repetition += 1) {
     for (let taskIndex = 0; taskIndex < suite.tasks.length; taskIndex += 1) {
@@ -79,6 +100,8 @@ export function buildRunPlan({ suite, models, experiment }) {
         plan.push({
           runId: `${task.id}-${model.id}-r${repetition}`,
           repetition,
+          seed: suite.seeds[repetition - 1],
+          suiteId: suite.suiteId,
           task,
           model,
         });

@@ -7,6 +7,10 @@ export async function writeJson(path, value) {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
+export async function fileSha256(path) {
+  return createHash("sha256").update(await readFile(path)).digest("hex");
+}
+
 export async function copyTree(source, destination) {
   await mkdir(dirname(destination), { recursive: true });
   await cp(source, destination, { recursive: true, force: false, errorOnExist: true });

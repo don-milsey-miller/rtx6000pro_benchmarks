@@ -55,6 +55,10 @@ PI_CODING_AGENT_DIR=$workspace/pi-config \
 PI_PATH=$workspace/pi/node_modules/.bin/pi \
 BENCH_AGENT_USER=bench \
 BENCH_ARTIFACTS=$artifacts \
+BENCH_CANDIDATE_ID=retained-optimized \
+BENCH_PI_VERSION="$($workspace/pi/node_modules/.bin/pi --version 2>/dev/null || true)" \
+BENCH_VLLM_VERSION="$($workspace/venvs/vllm/bin/python -c 'import vllm; print(vllm.__version__)')" \
+BENCH_VLLM_PROFILE_PATH=$workspace/results/config/active-profile.json \
 HTTP_PROXY=http://127.0.0.1:9 HTTPS_PROXY=http://127.0.0.1:9 ALL_PROXY=http://127.0.0.1:9 \
 NO_PROXY=127.0.0.1,localhost \
   node scripts/run-suite.mjs

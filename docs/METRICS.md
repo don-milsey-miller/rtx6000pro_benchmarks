@@ -11,6 +11,13 @@ measure is weighted completion:
 A run is fully complete only when every required check passes and the process
 exits cleanly. Partial credit is diagnostic and cannot be called a pass.
 
+Evaluator records separate observable status from suspected failure origin.
+Statuses are `pass`, `partial`, `assertion_fail`, `timeout`, `unverified`, or
+`aborted`; origins are `generated_product`, `agent_controller`, `evaluator`,
+`harness_contract`, `serving`, `provider`, or `unknown`. Incomplete or timed-out
+grading remains unverified and retains its executed-check count. It is never
+expanded into failures for checks that did not run.
+
 ## Pi and model
 
 - wall time and termination reason;

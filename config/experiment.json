@@ -1,14 +1,37 @@
 {
   "schemaVersion": 1,
   "experimentId": "forgebench-calibration-v1",
-  "budgetUsd": 100,
+  "budgetUsd": 70,
   "budgetSafetyFraction": 0.10,
   "gpuType": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
   "gpuCount": 3,
   "cloudType": "ANY",
-  "runsPerCell": 1,
+  "runsPerCell": 3,
   "parallelModels": 3,
   "profile": "optimized",
+  "repairPolicy": {
+    "maxAttempts": 3,
+    "tokenLimit": null,
+    "wallTimeLimit": "provider-budget"
+  },
+  "historicalCompatibility": {
+    "referenceChecksMustMatchExactly": true,
+    "smallAndMediumCheckTolerance": 0,
+    "largeTaskBands": {
+      "qwen": { "minimumPassed": 16, "maximumPassed": 18 },
+      "muse": { "minimumPassed": 14, "maximumPassed": 17 },
+      "gemma": { "verifiedResultRequired": true, "minimumPassed": null }
+    }
+  },
+  "promotionGates": {
+    "criticalTaskConsecutiveFullPasses": 3,
+    "noOrphanProcesses": true,
+    "noSecretLeakage": true,
+    "runpodCampaignSpendMaxUsd": 70,
+    "p95WallTime": "report-only",
+    "tokenUsage": "report-only",
+    "energyUsage": "report-only"
+  },
   "qualityGates": {
     "serviceErrorRateMax": 0.01,
     "toolErrorRateMax": 0.10,

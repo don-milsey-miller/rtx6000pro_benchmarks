@@ -21,11 +21,23 @@ try {
     const publicResult = await runBounded(npmCommand, [...npmPrefix, "test"], { cwd: reference, timeoutMs: 60_000, maxOutputBytes: 10 * 1024 * 1024 });
     if (publicResult.code !== 0) throw new Error(`${task.id} reference failed public tests:\n${publicResult.stdout}\n${publicResult.stderr}`);
     const gradePath = resolve(temp, `${task.id}-grade.json`);
+    const gradeEventsPath = resolve(temp, `${task.id}-events.jsonl`);
+    const evaluationEnv = {
+      BENCH_TASK_ID: task.id,
+      BENCH_RUN_ID: `validation-${task.id}`,
+      BENCH_CANDIDATE_ID: "validation-reference",
+      BENCH_SEED: String(suite.seed),
+      BENCH_MODEL_ID: "reference",
+      BENCH_CHECK_DEADLINE_MS: String(task.evaluation.checkDeadlineSeconds * 1000),
+      BENCH_CLEANUP_DEADLINE_MS: String(task.evaluation.cleanupDeadlineSeconds * 1000),
+      BENCH_EVALUATOR_DEADLINE_MS: String(task.evaluation.outerDeadlineSeconds * 1000),
+    };
     const gradeResult = await runBounded(process.execPath, [resolve(root, task.evaluator)], {
       cwd: root,
-      env: { ...process.env, BENCH_WORKSPACE: reference, GRADE_RESULT_PATH: gradePath },
-      timeoutMs: 180_000,
+      env: { ...process.env, ...evaluationEnv, BENCH_WORKSPACE: reference, GRADE_RESULT_PATH: gradePath, GRADE_EVENTS_PATH: gradeEventsPath },
+      timeoutMs: task.evaluation.outerDeadlineSeconds * 1000 + 5_000,
       maxOutputBytes: 20 * 1024 * 1024,
+      captureTimeoutDiagnostics: true,
     });
     const grade = JSON.parse(await readFile(gradePath, "utf8"));
     if (gradeResult.code !== 0 || grade.passed !== grade.total) throw new Error(`${task.id} reference failed independent evaluator: ${JSON.stringify(grade, null, 2)}`);
@@ -35,9 +47,10 @@ try {
     const emptyGrade = resolve(temp, `${task.id}-empty-grade.json`);
     const negative = await runBounded(process.execPath, [resolve(root, task.evaluator)], {
       cwd: root,
-      env: { ...process.env, BENCH_WORKSPACE: empty, GRADE_RESULT_PATH: emptyGrade },
-      timeoutMs: 60_000,
+      env: { ...process.env, ...evaluationEnv, BENCH_RUN_ID: `validation-empty-${task.id}`, BENCH_CANDIDATE_ID: "validation-empty", BENCH_MODEL_ID: "empty", BENCH_WORKSPACE: empty, GRADE_RESULT_PATH: emptyGrade, GRADE_EVENTS_PATH: resolve(temp, `${task.id}-empty-events.jsonl`) },
+      timeoutMs: task.evaluation.outerDeadlineSeconds * 1000 + 5_000,
       maxOutputBytes: 10 * 1024 * 1024,
+      captureTimeoutDiagnostics: true,
     });
     const failedGrade = JSON.parse(await readFile(emptyGrade, "utf8"));
     if (negative.code === 0 || failedGrade.passed === failedGrade.total) throw new Error(`${task.id} empty implementation unexpectedly passed`);

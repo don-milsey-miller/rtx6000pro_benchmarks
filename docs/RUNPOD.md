@@ -18,9 +18,11 @@ offline mode against those endpoints.
 - Results are downloaded and checksummed before normal termination.
 - Missing artifacts do not cancel the hard termination deadline.
 
-The approved ceiling for the initial redesigned benchmark is **$100.00**. The
-controller calculates its termination interval from the live hourly price and
-reserves a ten-percent safety margin.
+The approved ceiling for this campaign is **$70.00**. The controller calculates
+its termination interval from the live hourly price and reserves a ten-percent
+safety margin, limiting measured Pod runtime allocation to at most **$63.00**.
+When no three-GPU price is available it may wait up to six hours without
+creating or billing a Pod.
 
 ## Intended sequence
 

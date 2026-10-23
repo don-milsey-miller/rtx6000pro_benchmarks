@@ -47,6 +47,21 @@ not introduce undocumented features.
 6. Grade the application using an evaluator unavailable to the agent.
 7. Produce a structured result and an HTML report from raw evidence.
 
+## Evaluator lifecycle
+
+Every task declares a per-check deadline, a cleanup reserve, and an outer
+evaluator deadline in `config/suite.json`. Evaluators write an atomic partial
+grade and append a JSONL event after every completed check. A timed-out check
+stops further grading, preserves completed checks as evidence, marks remaining
+checks unverified, and enters bounded cleanup. The parent runner has a second
+outer bound and records a process-tree/listening-socket snapshot before it
+terminates the evaluator process group.
+
+Reference, empty, request-hang, SSE-hang, open-socket, evaluator-hang, and
+termination-resistant fixtures exercise these paths. Exact timing choices are
+versioned benchmark configuration and must be reassessed from measured runs;
+they are never implicit library defaults.
+
 ## Autoresearch optimization loop
 
 After the baseline, change one coherent factor per experiment. Examples include
